@@ -421,6 +421,7 @@ public class BeanDefinitionParserDelegate {
 			aliases.addAll(Arrays.asList(nameArr));
 		}
 
+		// id 不存在拿第一个name，作为BeanName
 		String beanName = id;
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
 			beanName = aliases.remove(0);
@@ -495,28 +496,37 @@ public class BeanDefinitionParserDelegate {
 	/**
 	 * Parse the bean definition itself, without regard to name or aliases. May return
 	 * {@code null} if problems occurred during the parsing of the bean definition.
+	 * 上面方法中已经对id，name和别名进行了处理
+	 * 这个方法处理，除上述三个属性外的其他属性
 	 */
 	@Nullable
 	public AbstractBeanDefinition parseBeanDefinitionElement(
 			Element ele, String beanName, @Nullable BeanDefinition containingBean) {
-
+		// 记录解析的Bean元素
 		this.parseState.push(new BeanEntry(beanName));
 
+		// class
 		String className = null;
 		if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
 			className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
 		}
+
+		// 父bean
 		String parent = null;
 		if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
 			parent = ele.getAttribute(PARENT_ATTRIBUTE);
 		}
 
 		try {
+
+			// 创建BeanDefinition
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
 
+			// 解析单例，懒加载，primary等属性
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
+			// 设置描述信息
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
-
+			// 解析Meta 元信息
 			parseMetaElements(ele, bd);
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());

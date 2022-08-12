@@ -49,11 +49,15 @@ public class SimpleAliasRegistry implements AliasRegistry {
 	private final Map<String, String> aliasMap = new ConcurrentHashMap<>(16);
 
 
+	// 这里name 是bean的name
 	@Override
 	public void registerAlias(String name, String alias) {
 		Assert.hasText(name, "'name' must not be empty");
 		Assert.hasText(alias, "'alias' must not be empty");
+		// 加锁，什么要加锁，ConcurrentHashMap 不是号称线程安全高并发吗。
+		// 可能只是启动的时候用，即使加锁对性能无影响
 		synchronized (this.aliasMap) {
+			// 如果别名和beanName相同，就把别名去掉
 			if (alias.equals(name)) {
 				this.aliasMap.remove(alias);
 				if (logger.isDebugEnabled()) {
@@ -63,10 +67,12 @@ public class SimpleAliasRegistry implements AliasRegistry {
 			else {
 				String registeredName = this.aliasMap.get(alias);
 				if (registeredName != null) {
+					// 别名已经存在，并且和当前的beanName相当，就结束
 					if (registeredName.equals(name)) {
 						// An existing alias - no need to re-register
 						return;
 					}
+					// 如果不允许覆盖，相当于别名已经被占用了
 					if (!allowAliasOverriding()) {
 						throw new IllegalStateException("Cannot define alias '" + alias + "' for name '" +
 								name + "': It is already registered for name '" + registeredName + "'.");
@@ -76,6 +82,7 @@ public class SimpleAliasRegistry implements AliasRegistry {
 								registeredName + "' with new target name '" + name + "'");
 					}
 				}
+				// name 和 别名，别名 和 name 调换位置校验
 				checkForAliasCircle(name, alias);
 				this.aliasMap.put(alias, name);
 				if (logger.isTraceEnabled()) {
