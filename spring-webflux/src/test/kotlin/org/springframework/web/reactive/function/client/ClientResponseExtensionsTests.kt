@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *//*
+
 
 package org.springframework.web.reactive.function.client
 
@@ -27,11 +28,13 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import reactor.core.publisher.Mono
 
+*/
 /**
  * Mock object based tests for [ClientResponse] Kotlin extensions.
  *
  * @author Sebastien Deleuze
- */
+ *//*
+
 class ClientResponseExtensionsTests {
 
 	private val response = mockk<ClientResponse>(relaxed = true)
@@ -106,3 +109,4 @@ class ClientResponseExtensionsTests {
 
 	class Foo
 }
+*/

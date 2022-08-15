@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *//*
+
 
 package org.springframework.web.reactive.function.server
 
@@ -30,11 +31,13 @@ import org.springframework.http.MediaType.*
 import reactor.core.publisher.Mono
 import java.util.concurrent.CompletableFuture
 
+*/
 /**
  * Mock object based tests for [ServerResponse] Kotlin extensions
  *
  * @author Sebastien Deleuze
- */
+ *//*
+
 @Suppress("UnassignedFluxMonoInstance")
 class ServerResponseExtensionsTests {
 
@@ -149,3 +152,4 @@ class ServerResponseExtensionsTests {
 
 	class Foo
 }
+*/

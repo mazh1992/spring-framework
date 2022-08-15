@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *//*
+
 
 package org.springframework.test.web.servlet
 
@@ -29,13 +30,15 @@ import reactor.core.publisher.Mono
 import java.security.Principal
 import java.util.*
 
+*/
 /**
  * [MockMvc] DSL tests that verifies builder, actions and expect blocks.
  *
  * @author Clint Checketts
  * @author Petr Balat
  * @author Sebastien Deleuze
- */
+ *//*
+
 class MockMvcExtensionsTests {
 
 	private val mockMvc = MockMvcBuilders.standaloneSetup(PersonController()).build()
@@ -181,3 +184,4 @@ class MockMvcExtensionsTests {
 		}
 	}
 }
+*/

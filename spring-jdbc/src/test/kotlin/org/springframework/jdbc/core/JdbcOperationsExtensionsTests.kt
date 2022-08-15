@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *//*
+
 
 package org.springframework.jdbc.core
 
@@ -24,12 +25,14 @@ import io.mockk.verify
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 
+*/
 /**
  * Mock object based tests for [JdbcOperations] Kotlin extensions
  *
  * @author Mario Arias
  * @author Sebastien Deleuze
- */
+ *//*
+
 class JdbcOperationsExtensionsTests {
 
 	val template = mockk<JdbcTemplate>()
@@ -139,3 +142,4 @@ class JdbcOperationsExtensionsTests {
 	}
 
 }
+*/

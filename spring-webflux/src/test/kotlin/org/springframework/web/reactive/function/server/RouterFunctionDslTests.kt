@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *//*
+
 
 package org.springframework.web.reactive.function.server
 
@@ -28,11 +29,13 @@ import org.springframework.web.testfixture.server.MockServerWebExchange
 import reactor.core.publisher.Mono
 import reactor.test.StepVerifier
 
+*/
 /**
  * Tests for [RouterFunctionDsl].
  *
  * @author Sebastien Deleuze
- */
+ *//*
+
 class RouterFunctionDslTests {
 
 	@Test
@@ -216,3 +219,4 @@ class RouterFunctionDslTests {
 
 @Suppress("UNUSED_PARAMETER")
 private fun handle(req: ServerRequest) = ServerResponse.ok().build()
+*/

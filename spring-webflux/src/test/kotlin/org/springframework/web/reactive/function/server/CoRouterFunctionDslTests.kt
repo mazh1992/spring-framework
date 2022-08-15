@@ -12,7 +12,8 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
+ *//*
+
 
 package org.springframework.web.reactive.function.server
 
@@ -27,11 +28,13 @@ import org.springframework.web.testfixture.http.server.reactive.MockServerHttpRe
 import org.springframework.web.testfixture.server.MockServerWebExchange
 import reactor.test.StepVerifier
 
+*/
 /**
  * Tests for [CoRouterFunctionDsl].
  *
  * @author Sebastien Deleuze
- */
+ *//*
+
 class CoRouterFunctionDslTests {
 
 	@Test
@@ -237,3 +240,4 @@ class CoRouterFunctionDslTests {
 
 @Suppress("UNUSED_PARAMETER")
 private suspend fun handle(req: ServerRequest) = ServerResponse.ok().buildAndAwait()
+*/
