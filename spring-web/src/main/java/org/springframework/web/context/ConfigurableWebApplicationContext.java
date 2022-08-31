@@ -78,6 +78,10 @@ public interface ConfigurableWebApplicationContext extends WebApplicationContext
 	 * to be used for building a default context config location.
 	 * The root web application context does not have a namespace.
 	 */
+	// 设置及获取当前上下文的命名空间，命名空间用于区分不同的web容器的配置，在查找配置时会根据命名空间查找
+	// 默认不进行命名空间配置，配置会在/WEB-INF/applicationContext.xml下查找
+	// 如果配置了，会在/WEB-INF+"namespace"+/applicationContext.xml下查找
+	// 根容器没有Namespace
 	void setNamespace(@Nullable String namespace);
 
 	/**

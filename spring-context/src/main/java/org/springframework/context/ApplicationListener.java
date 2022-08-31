@@ -36,6 +36,7 @@ import java.util.EventListener;
  * @see org.springframework.context.event.ApplicationEventMulticaster
  * @see org.springframework.context.event.EventListener
  */
+// 事件监听器，实现了java.util包下的EventListener接口
 @FunctionalInterface
 public interface ApplicationListener<E extends ApplicationEvent> extends EventListener {
 
@@ -43,6 +44,9 @@ public interface ApplicationListener<E extends ApplicationEvent> extends EventLi
 	 * Handle an application event.
 	 * @param event the event to respond to
 	 */
+	// 根据接口申明的泛型类型处理对应的事件
+	// 通过《EventListener implements ApplicationListener<MyEvent>》
+	// 在接口中申明了泛型类型为MyEvent，所以能监听到MyEvent这一类事件
 	void onApplicationEvent(E event);
 
 }

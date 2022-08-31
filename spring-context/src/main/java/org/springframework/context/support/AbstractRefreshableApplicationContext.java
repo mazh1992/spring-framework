@@ -64,13 +64,16 @@ import org.springframework.lang.Nullable;
  */
 public abstract class AbstractRefreshableApplicationContext extends AbstractApplicationContext {
 
+	// 碰到重复的Bean时，是否允许覆盖原先的BeanDefinition
 	@Nullable
 	private Boolean allowBeanDefinitionOverriding;
 
+	// 是否允许循环引用
 	@Nullable
 	private Boolean allowCircularReferences;
 
 	/** Bean factory for this context. */
+	// 默认持有一个DefaultListableBeanFactory
 	@Nullable
 	private volatile DefaultListableBeanFactory beanFactory;
 
@@ -117,6 +120,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * bean factory, shutting down the previous bean factory (if any) and
 	 * initializing a fresh bean factory for the next phase of the context's lifecycle.
 	 */
+	// 刷新Bean工厂，如果当前上下文中已经存在一个容器的话，会先销毁容器中的所有Bean，然后关闭Bean工厂
+	// 之后在重新创建一个DefaultListableBeanFactory
 	@Override
 	protected final void refreshBeanFactory() throws BeansException {
 		// 如果已经有容器，销毁容器中的bean，关闭容器
@@ -165,6 +170,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 		return (this.beanFactory != null);
 	}
 
+	// 复写了getBeanFactory，默认返回的是通过createBeanFactory创建的一个DefaultListableBeanFactory
 	@Override
 	public final ConfigurableListableBeanFactory getBeanFactory() {
 		DefaultListableBeanFactory beanFactory = this.beanFactory;
@@ -233,6 +239,9 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	 * @see org.springframework.beans.factory.support.PropertiesBeanDefinitionReader
 	 * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 	 */
+	// 提供了一个抽象的加载BeanDefinition的方法，这个方法没有具体实现，不同的配置方式需要进行不同的实现，
+	// 到这里，配置的方式不能确定，既可能是以XML的方式，也可能是以java config的方式
+	// 另外配置文件的加载方式也不能确定
 	protected abstract void loadBeanDefinitions(DefaultListableBeanFactory beanFactory)
 			throws BeansException, IOException;
 

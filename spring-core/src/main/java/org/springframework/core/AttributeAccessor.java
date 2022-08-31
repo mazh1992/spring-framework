@@ -24,6 +24,9 @@ import org.springframework.lang.Nullable;
  *
  * @author Rob Harrop
  * @since 2.0
+ *
+ * Accessor：存取器，
+ * 属性存取器
  */
 public interface AttributeAccessor {
 

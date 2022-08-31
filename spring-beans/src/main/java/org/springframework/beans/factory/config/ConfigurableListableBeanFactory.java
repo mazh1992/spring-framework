@@ -39,6 +39,7 @@ import org.springframework.lang.Nullable;
  * @since 03.11.2003
  * @see org.springframework.context.support.AbstractApplicationContext#getBeanFactory()
  */
+// 所有接口的集大成者，拥有上面所有接口的功能
 public interface ConfigurableListableBeanFactory
 		extends ListableBeanFactory, AutowireCapableBeanFactory, ConfigurableBeanFactory {
 
@@ -47,6 +48,7 @@ public interface ConfigurableListableBeanFactory
 	 * for example, String. Default is none.
 	 * @param type the dependency type to ignore
 	 */
+	// 自动装配的模式下，忽略这个类型的依赖
 	void ignoreDependencyType(Class<?> type);
 
 	/**
@@ -60,6 +62,7 @@ public interface ConfigurableListableBeanFactory
 	 * @see org.springframework.beans.factory.BeanFactoryAware
 	 * @see org.springframework.context.ApplicationContextAware
 	 */
+	//自动装配的模式下，忽略这个接口类型的依赖
 	void ignoreDependencyInterface(Class<?> ifc);
 
 	/**
@@ -78,6 +81,7 @@ public interface ConfigurableListableBeanFactory
 	 * implementation of the {@link org.springframework.beans.factory.ObjectFactory}
 	 * interface, which allows for lazy resolution of the actual target value.
 	 */
+	// 注入一个指定类型的依赖。这个方法设计的目的主要是为了让容器中的Bean能依赖一个不被容器管理的Bean
 	void registerResolvableDependency(Class<?> dependencyType, @Nullable Object autowiredValue);
 
 	/**
@@ -89,6 +93,7 @@ public interface ConfigurableListableBeanFactory
 	 * @return whether the bean should be considered as autowire candidate
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the given name
 	 */
+	// 判断指定名称的Bean能否被注入到指定的依赖中
 	boolean isAutowireCandidate(String beanName, DependencyDescriptor descriptor)
 			throws NoSuchBeanDefinitionException;
 
@@ -106,6 +111,7 @@ public interface ConfigurableListableBeanFactory
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the given name
 	 * defined in this factory
 	 */
+	// 获取指定的BeanDefinition
 	BeanDefinition getBeanDefinition(String beanName) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -120,6 +126,7 @@ public interface ConfigurableListableBeanFactory
 	 * @see #getBeanNamesForType
 	 * @see #getBeanNamesForAnnotation
 	 */
+	// 获取包含了所有的Bean的名称的迭代器
 	Iterator<String> getBeanNamesIterator();
 
 	/**
@@ -132,6 +139,7 @@ public interface ConfigurableListableBeanFactory
 	 * @see #getBeanDefinition
 	 * @see #getMergedBeanDefinition
 	 */
+	// 清理元数据的缓存
 	void clearMetadataCache();
 
 	/**
@@ -139,6 +147,7 @@ public interface ConfigurableListableBeanFactory
 	 * will not be modified or post-processed any further.
 	 * <p>This allows the factory to aggressively cache bean definition metadata.
 	 */
+	// 冻结所有的Bean配置
 	void freezeConfiguration();
 
 	/**
@@ -157,6 +166,7 @@ public interface ConfigurableListableBeanFactory
 	 * Call {@link #destroySingletons()} for full cleanup in this case.
 	 * @see #destroySingletons()
 	 */
+	// 实例化当前所有的剩下的单实例
 	void preInstantiateSingletons() throws BeansException;
 
 }

@@ -55,6 +55,9 @@ public interface SingletonBeanRegistry {
 	 * @see org.springframework.beans.factory.DisposableBean#destroy
 	 * @see org.springframework.beans.factory.support.BeanDefinitionRegistry#registerBeanDefinition
 	 */
+	//以指定的名字将给定Object注册到BeanFactory中。
+	//此接口相当于直接把Bean注册，所以都是准备好了的Bean。（动态的向容器里直接放置一个Bean）
+	//什么BeanPostProcessor、InitializingBean、afterPropertiesSet等都不会被执行的，销毁的时候也不会收到destroy的信息
 	void registerSingleton(String beanName, Object singletonObject);
 
 	/**
@@ -70,6 +73,8 @@ public interface SingletonBeanRegistry {
 	 * @return the registered singleton object, or {@code null} if none found
 	 * @see ConfigurableListableBeanFactory#getBeanDefinition
 	 */
+	//以Object的形式返回指定名字的Bean，如果仅仅还是只有Bean定义信息，这里不会反悔
+	// 需要注意的是：此方法不能直接通过别名获取Bean。若是别名，请通过BeanFactory的方法先获取到id
 	@Nullable
 	Object getSingleton(String beanName);
 

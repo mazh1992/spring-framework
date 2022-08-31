@@ -137,6 +137,8 @@ public class ResolvableType implements Serializable {
 	/**
 	 * Private constructor used to create a new {@link ResolvableType} for cache key purposes,
 	 * with no upfront resolution.
+	 * ResolvableType为所有的java类型提供了统一的数据结构以及API，
+	 * 换句话说，一个ResolvableType对象就对应着一种java类型。我们可以通过ResolvableType对象获取类型携带的信息
 	 */
 	private ResolvableType(
 			Type type, @Nullable TypeProvider typeProvider, @Nullable VariableResolver variableResolver) {
@@ -1116,6 +1118,7 @@ public class ResolvableType implements Serializable {
 				return type;
 			}
 		}
+		// 返回通过事件的class类型封装的一个ResolvableType
 		return ResolvableType.forClass(instance.getClass());
 	}
 

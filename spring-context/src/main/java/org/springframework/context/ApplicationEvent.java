@@ -27,12 +27,14 @@ import java.util.EventObject;
  * @see org.springframework.context.ApplicationListener
  * @see org.springframework.context.event.EventListener
  */
+// 这个类在设计时是作为整个应用内所有事件的基类，之所以被设计成抽象类，是因为直接发布这个对象没有任何意义
 public abstract class ApplicationEvent extends EventObject {
 
 	/** use serialVersionUID from Spring 1.2 for interoperability. */
 	private static final long serialVersionUID = 7099057708183571937L;
 
 	/** System time when the event happened. */
+	// 事件创建的事件
 	private final long timestamp;
 
 

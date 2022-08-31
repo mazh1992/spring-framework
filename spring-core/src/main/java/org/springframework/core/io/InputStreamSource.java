@@ -52,6 +52,7 @@ public interface InputStreamSource {
 	 * @throws IOException if the content stream could not be opened
 	 * @see Resource#isReadable()
 	 */
+	// 每次调用都将返回一个当前资源对应的java.io. InputStream字节流
 	InputStream getInputStream() throws IOException;
 
 }

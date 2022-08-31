@@ -68,6 +68,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see #autowire
 	 * @see #autowireBeanProperties
 	 */
+	// 自动注入下的四种模型
 	int AUTOWIRE_NO = 0;
 
 	/**
@@ -117,6 +118,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see #applyBeanPostProcessorsBeforeInitialization(Object, String)
 	 * @see #applyBeanPostProcessorsAfterInitialization(Object, String)
 	 */
+	//该属性是一种约定俗成的用法：以类全限定名+.ORIGINAL 作为Bean Name，用于告诉Spring，在初始化的时候，需要返回原始给定实例，而别返回代理对象
 	String ORIGINAL_INSTANCE_SUFFIX = ".ORIGINAL";
 
 
@@ -136,6 +138,12 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @return the new bean instance
 	 * @throws BeansException if instantiation or wiring failed
 	 */
+	//-------------------------------------------------------------------------
+	// 下面这三个方法通常用于创建跟填充Bean(对Bean进行属性注入)，但是请注意，直接采用下面这些方法创建或者装
+	// 配的Bean不被Spring容器所管理
+	//-------------------------------------------------------------------------
+
+	// 用指定的class创建一个Bean,这个Bean会经过属性注入，并且会执行相关的后置处理器，但是并不会放入		// Spring容器中
 	<T> T createBean(Class<T> beanClass) throws BeansException;
 
 	/**
@@ -148,6 +156,8 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @param existingBean the existing bean instance
 	 * @throws BeansException if wiring failed
 	 */
+	// 为指定的一个对象完成属性注入,这个对象可以不被容器管理，可以是一个Spring容器外部的对象
+	// 主要调用populateBean
 	void autowireBean(Object existingBean) throws BeansException;
 
 	/**
@@ -167,6 +177,11 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @throws BeansException if the initialization failed
 	 * @see #initializeBean
 	 */
+	// 配置参数中指定的bean
+	// beanName表示在Bean定义中的名称。
+	// populateBean和initializeBean都会被调用
+	// existingBean：需要被配置的Bean
+	// beanName：对应的Bean的名称
 	Object configureBean(Object existingBean, String beanName) throws BeansException;
 
 
@@ -191,6 +206,15 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see #AUTOWIRE_BY_TYPE
 	 * @see #AUTOWIRE_CONSTRUCTOR
 	 */
+	//-------------------------------------------------------------------------
+	// 下面这一系列方法主要为了更细粒度的操纵Bean的生命周期
+	//-------------------------------------------------------------------------
+
+	// 支持以给定的注入模型跟依赖检查级别创建，注入Bean。关于注入模型我这里就不想再说了
+	// 依赖检查的级别如下：
+	// 1.DEPENDENCY_CHECK_NONE = 0，代表不进行依赖检查
+	// 2.DEPENDENCY_CHECK_SIMPLE = 2，代表对基本数据类的字段做检查。如果一个int类型的字段没有被赋值，那么会抛出异常
+	// 3.DEPENDENCY_CHECK_ALL = 3，对引用类型的字段做检查。如果一个Object类型的字段没有被赋值，那么会抛出异常
 	Object createBean(Class<?> beanClass, int autowireMode, boolean dependencyCheck) throws BeansException;
 
 	/**
@@ -264,6 +288,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @throws BeansException if applying the property values failed
 	 * @see #autowireBeanProperties
 	 */
+	//就是把Bean定义信息里面的一些东西，赋值到已经存在的Bean里面
 	void applyBeanPropertyValues(Object existingBean, String beanName) throws BeansException;
 
 	/**
@@ -283,6 +308,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @throws BeansException if the initialization failed
 	 * @see #ORIGINAL_INSTANCE_SUFFIX
 	 */
+	// 初始化Bean,执行初始化回调，及下面两个后置处理器中的方法
 	Object initializeBean(Object existingBean, String beanName) throws BeansException;
 
 	/**
@@ -299,6 +325,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see BeanPostProcessor#postProcessBeforeInitialization
 	 * @see #ORIGINAL_INSTANCE_SUFFIX
 	 */
+	// 调用对应的两个后置处理器
 	Object applyBeanPostProcessorsBeforeInitialization(Object existingBean, String beanName)
 			throws BeansException;
 
@@ -327,6 +354,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * and logged instead of propagated to the caller of this method.
 	 * @param existingBean the bean instance to destroy
 	 */
+	// 执行销毁相关的回调方法
 	void destroyBean(Object existingBean);
 
 
@@ -347,6 +375,12 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @since 4.3.3
 	 * @see #getBean(Class)
 	 */
+	//-------------------------------------------------------------------------
+	// 关于注入点的相关方法
+	//-------------------------------------------------------------------------
+
+	// 查找唯一符合指定类的实例，如果有，则返回实例的名字和实例本身
+	// 底层依赖于：BeanFactory中的getBean(Class)方法
 	<T> NamedBeanHolder<T> resolveNamedBean(Class<T> requiredType) throws BeansException;
 
 	/**
@@ -363,6 +397,9 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @since 5.1.5
 	 * @see #getBean(String, Class)
 	 */
+	// DependencyDescriptor:依赖名描述符，描述了依赖的相关情况，比如存在于哪个类，哪个字段，什么类型
+	// 查找指定名称，指定类型的Bean
+	// 底层依赖于：BeanFactory中的getBean(name,Class)方法
 	Object resolveBeanByName(String name, DependencyDescriptor descriptor) throws BeansException;
 
 	/**
@@ -376,6 +413,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @since 2.5
 	 * @see #resolveDependency(DependencyDescriptor, String, Set, TypeConverter)
 	 */
+	// 解析指定的依赖。就是根据依赖描述符的定义在容器中查找符合要求的Bean
 	@Nullable
 	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName) throws BeansException;
 
@@ -393,6 +431,11 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @since 2.5
 	 * @see DependencyDescriptor
 	 */
+	//descriptor 依赖描述 (field/method/constructor)
+	//requestingBeanName 依赖描述所属的Bean
+	//autowiredBeanNames 与指定Bean有依赖关系的Bean的名称
+	//typeConverter 用以转换数组和连表的转换器
+	//备注：结果可能为null，毕竟容器中可能不存在这个依赖嘛~~~~~~~~~~~~~~~~
 	@Nullable
 	Object resolveDependency(DependencyDescriptor descriptor, @Nullable String requestingBeanName,
 			@Nullable Set<String> autowiredBeanNames, @Nullable TypeConverter typeConverter) throws BeansException;

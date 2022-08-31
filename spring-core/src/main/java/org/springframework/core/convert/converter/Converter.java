@@ -30,6 +30,7 @@ import org.springframework.lang.Nullable;
  * @param <S> the source type
  * @param <T> the target type
  */
+// 将一个S类型的数据转换成T类型
 @FunctionalInterface
 public interface Converter<S, T> {
 

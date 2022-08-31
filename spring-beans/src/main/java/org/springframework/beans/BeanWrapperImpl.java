@@ -66,6 +66,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * Cached introspections results for this object, to prevent encountering
 	 * the cost of JavaBeans introspection every time.
 	 */
+	// 缓存内省的结果，BeanWrapperImpl就是通过这个对象来完成对包装的Bean的属性的控制
 	@Nullable
 	private CachedIntrospectionResults cachedIntrospectionResults;
 
@@ -144,6 +145,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	public void setBeanInstance(Object object) {
 		this.wrappedObject = object;
 		this.rootObject = object;
+		// 实际进行类型转换的对象：typeConverterDelegate
 		this.typeConverterDelegate = new TypeConverterDelegate(this, this.wrappedObject);
 		setIntrospectionClass(object.getClass());
 	}
@@ -169,6 +171,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * Obtain a lazily initialized CachedIntrospectionResults instance
 	 * for the wrapped object.
 	 */
+	// 最终调用的就是CachedIntrospectionResults的forClass方法进行内省并缓存，底层调用的就是java的内省机制
 	private CachedIntrospectionResults getCachedIntrospectionResults() {
 		if (this.cachedIntrospectionResults == null) {
 			this.cachedIntrospectionResults = CachedIntrospectionResults.forClass(getWrappedClass());

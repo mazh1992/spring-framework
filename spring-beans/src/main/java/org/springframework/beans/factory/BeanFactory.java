@@ -123,6 +123,8 @@ public interface BeanFactory {
 	 * {@code myJndiObject} is a FactoryBean, getting {@code &myJndiObject}
 	 * will return the factory, not the instance returned by the factory.
 	 */
+	// FactroyBean的前缀，如果getBean的时候BeanName有这个前缀，会去获取对应的FactroyBean
+	// 而不是获取FactroyBean的getObject返回的Bean
 	String FACTORY_BEAN_PREFIX = "&";
 
 
@@ -138,6 +140,7 @@ public interface BeanFactory {
 	 * @throws NoSuchBeanDefinitionException if there is no bean with the specified name
 	 * @throws BeansException if the bean could not be obtained
 	 */
+	// 都是用于获取指定的Bean，根据名称获取指定类型获取
 	Object getBean(String name) throws BeansException;
 
 	/**
@@ -217,6 +220,7 @@ public interface BeanFactory {
 	 * @since 5.1
 	 * @see #getBeanProvider(ResolvableType)
 	 */
+	// 获取指定的Bean的ObjectProvider,
 	<T> ObjectProvider<T> getBeanProvider(Class<T> requiredType);
 
 	/**
@@ -250,6 +254,7 @@ public interface BeanFactory {
 	 * @param name the name of the bean to query
 	 * @return whether a bean with the given name is present
 	 */
+	// 检查容器中是否含有这个名称的Bean
 	boolean containsBean(String name);
 
 	/**
@@ -267,6 +272,7 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #isPrototype
 	 */
+	// 判断指定的Bean是否为单例
 	boolean isSingleton(String name) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -285,6 +291,7 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #isSingleton
 	 */
+	// 判断指定的Bean是否为原型
 	boolean isPrototype(String name) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -302,6 +309,7 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #getType
 	 */
+	// 判断指定的Bean类型是否匹配，
 	boolean isTypeMatch(String name, ResolvableType typeToMatch) throws NoSuchBeanDefinitionException;
 
 	/**
@@ -336,6 +344,7 @@ public interface BeanFactory {
 	 * @see #getBean
 	 * @see #isTypeMatch
 	 */
+	// 返回指定Bean的类型
 	@Nullable
 	Class<?> getType(String name) throws NoSuchBeanDefinitionException;
 
@@ -371,6 +380,7 @@ public interface BeanFactory {
 	 * @return the aliases, or an empty array if none
 	 * @see #getBean
 	 */
+	// 返回指定Bean的别名
 	String[] getAliases(String name);
 
 }

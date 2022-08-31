@@ -57,6 +57,7 @@ public interface Resource extends InputStreamSource {
 	 * existence of a {@code Resource} handle only guarantees a valid
 	 * descriptor handle.
 	 */
+	// 用于判断对应的资源是否真的存在
 	boolean exists();
 
 	/**
@@ -70,6 +71,7 @@ public interface Resource extends InputStreamSource {
 	 * @see #getInputStream()
 	 * @see #exists()
 	 */
+	// 用于判断对应资源的内容是否可读。需要注意的是当其结果为true的时候，其内容未必真的可读，但如果返回false，则其内容必定不可读
 	default boolean isReadable() {
 		return exists();
 	}
@@ -80,6 +82,8 @@ public interface Resource extends InputStreamSource {
 	 * and must be read and closed to avoid resource leaks.
 	 * <p>Will be {@code false} for typical resource descriptors.
 	 */
+	// 用于判断当前资源是否代表一个已打开的输入流，如果结果为true，则表示当前资源的输入流不可多次读取，
+	// 而且在读取以后需要对它进行关闭，以防止内存泄露。该方法主要针对于实现类InputStreamResource，实现类中只有它的返回结果为true，其他都为false。
 	default boolean isOpen() {
 		return false;
 	}
@@ -92,6 +96,7 @@ public interface Resource extends InputStreamSource {
 	 * @since 5.0
 	 * @see #getFile()
 	 */
+	// 当前资源是否是一个文件
 	default boolean isFile() {
 		return false;
 	}
@@ -101,6 +106,7 @@ public interface Resource extends InputStreamSource {
 	 * @throws IOException if the resource cannot be resolved as URL,
 	 * i.e. if the resource is not available as descriptor
 	 */
+	//当前资源对应的URL。如果当前资源不能解析为一个URL则会抛出异常
 	URL getURL() throws IOException;
 
 	/**
@@ -109,6 +115,7 @@ public interface Resource extends InputStreamSource {
 	 * i.e. if the resource is not available as descriptor
 	 * @since 2.5
 	 */
+	//当前资源对应的URI。如果当前资源不能解析为一个URI则会抛出异常
 	URI getURI() throws IOException;
 
 	/**
@@ -118,6 +125,7 @@ public interface Resource extends InputStreamSource {
 	 * @throws IOException in case of general resolution/reading failures
 	 * @see #getInputStream()
 	 */
+	// 返回当前资源对应的File。如果当前资源不能以绝对路径解析为一个File则会抛出异常。
 	File getFile() throws IOException;
 
 	/**
@@ -131,6 +139,7 @@ public interface Resource extends InputStreamSource {
 	 * @since 5.0
 	 * @see #getInputStream()
 	 */
+	// 返回一个ReadableByteChannel
 	default ReadableByteChannel readableChannel() throws IOException {
 		return Channels.newChannel(getInputStream());
 	}
@@ -140,6 +149,7 @@ public interface Resource extends InputStreamSource {
 	 * @throws IOException if the resource cannot be resolved
 	 * (in the file system or as some other known physical resource type)
 	 */
+	//  返回资源的长度
 	long contentLength() throws IOException;
 
 	/**
@@ -147,6 +157,7 @@ public interface Resource extends InputStreamSource {
 	 * @throws IOException if the resource cannot be resolved
 	 * (in the file system or as some other known physical resource type)
 	 */
+	// 最后修改时间
 	long lastModified() throws IOException;
 
 	/**
@@ -155,6 +166,7 @@ public interface Resource extends InputStreamSource {
 	 * @return the resource handle for the relative resource
 	 * @throws IOException if the relative resource cannot be determined
 	 */
+	// 根据当前资源以及相对当前资源的路径创建一个新的资源，比如当前Resource代表文件资源“d:/abc/a.java”,则createRelative（“xyz.txt”）将返回表文件资源“d:/abc/xyz.txt”
 	Resource createRelative(String relativePath) throws IOException;
 
 	/**
@@ -163,6 +175,7 @@ public interface Resource extends InputStreamSource {
 	 * <p>Returns {@code null} if this type of resource does not
 	 * have a filename.
 	 */
+	// 返回文件一个文件名称，通常来说会返回该资源路径的最后一段
 	@Nullable
 	String getFilename();
 
@@ -173,6 +186,7 @@ public interface Resource extends InputStreamSource {
 	 * from their {@code toString} method.
 	 * @see Object#toString()
 	 */
+	// 返回描述信息
 	String getDescription();
 
 }

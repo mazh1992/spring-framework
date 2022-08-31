@@ -50,6 +50,10 @@ import org.springframework.util.StringValueResolver;
  * @author Juergen Hoeller
  * @since 3.0
  */
+
+// 继承了GenericConversionService ，所以它能对Converter进行一系列的操作
+// 实现了接口FormatterRegistry，所以它也可以注册格式化器了
+// 实现了EmbeddedValueResolverAware，所以它还能有非常强大的功能：处理占位符
 public class FormattingConversionService extends GenericConversionService
 		implements FormatterRegistry, EmbeddedValueResolverAware {
 
@@ -67,6 +71,7 @@ public class FormattingConversionService extends GenericConversionService
 	}
 
 
+
 	@Override
 	public void addPrinter(Printer<?> printer) {
 		Class<?> fieldType = getFieldType(printer, Printer.class);
@@ -79,11 +84,19 @@ public class FormattingConversionService extends GenericConversionService
 		addConverter(new ParserConverter(fieldType, parser, this));
 	}
 
+	// 最终也是交给addFormatterForFieldType去做的
+	// getFieldType：它会拿到泛型类型。并且支持DecoratingProxy
 	@Override
 	public void addFormatter(Formatter<?> formatter) {
 		addFormatterForFieldType(getFieldType(formatter), formatter);
 	}
 
+	// 存储都是分开存储的  读写分离
+	// PrinterConverter和ParserConverter都是一个GenericConverter  采用内部类实现的
+	// 注意：他们的ConvertiblePair必有一个类型是String.class
+	// Locale一般都可以这么获取：LocaleContextHolder.getLocale()
+	// 在进行printer之前，会先判断是否能进行类型转换，如果能进行类型转换会先进行类型转换，之后再格式化
+	// 在parse之后，会判断是否还需要进行类型转换，如果需要类型转换会先进行类型转换
 	@Override
 	public void addFormatterForFieldType(Class<?> fieldType, Formatter<?> formatter) {
 		addConverter(new PrinterConverter(fieldType, formatter, this));

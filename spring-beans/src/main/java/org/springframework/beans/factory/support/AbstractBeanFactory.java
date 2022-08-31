@@ -112,6 +112,10 @@ import org.springframework.util.StringValueResolver;
  * @see AbstractAutowireCapableBeanFactory#createBean
  * @see DefaultListableBeanFactory#getBeanDefinition
  */
+//... 实现了大部分的方法，其中最终的实现为getBean()/doGetBean()方法的实现，提供了模版。其实createBean抽象方法，还是子类去实现的
+//... isSingleton(String name) / isPrototype(String name) / containsBean(String name) 也能实现精准的判断了
+
+// ===其中，它自己提供了三个抽象方法，子类必要去实现的===
 public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport implements ConfigurableBeanFactory {
 
 	/** Parent bean factory, for bean inheritance support. */
@@ -927,8 +931,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	public void addBeanPostProcessor(BeanPostProcessor beanPostProcessor) {
 		Assert.notNull(beanPostProcessor, "BeanPostProcessor must not be null");
 		// Remove from old position, if any
+		// 可以看到，后添加进来的beanPostProcessor会覆盖之前添加的
 		this.beanPostProcessors.remove(beanPostProcessor);
 		// Track whether it is instantiation/destruction aware
+		// 这个状态变量会影响之后的执行流程，
+		// 我们只需要知道一旦添加了一个InstantiationAwareBeanPostProcessor就会将变量置为true即可
 		if (beanPostProcessor instanceof InstantiationAwareBeanPostProcessor) {
 			this.hasInstantiationAwareBeanPostProcessors = true;
 		}
@@ -1910,6 +1917,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see #containsBean
 	 * @see org.springframework.beans.factory.ListableBeanFactory#containsBeanDefinition
 	 */
+
+	// 效果同：ListableBeanFactory#containsBeanDefinition  实现类：DefaultListableBeanFactory
 	protected abstract boolean containsBeanDefinition(String beanName);
 
 	/**
@@ -1931,6 +1940,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @see ChildBeanDefinition
 	 * @see org.springframework.beans.factory.config.ConfigurableListableBeanFactory#getBeanDefinition
 	 */
+	// 效果同：ConfigurableListableBeanFactory#getBeanDefinition  实现类：DefaultListableBeanFactory
 	protected abstract BeanDefinition getBeanDefinition(String beanName) throws BeansException;
 
 	/**
@@ -1944,6 +1954,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * @return a new instance of the bean
 	 * @throws BeanCreationException if the bean could not be created
 	 */
+	// 创建Bean的复杂逻辑，子类去实现。(子类：AbstractAutowireCapableBeanFactory)
 	protected abstract Object createBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
 			throws BeanCreationException;
 

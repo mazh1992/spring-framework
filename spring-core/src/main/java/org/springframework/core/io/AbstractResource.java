@@ -45,6 +45,7 @@ import org.springframework.util.ResourceUtils;
  * @author Sam Brannen
  * @since 28.12.2003
  */
+// 实现了Resource接口，是大多数Resource的实现类的基类，提供了很多通用的方法。
 public abstract class AbstractResource implements Resource {
 
 	/**

@@ -55,6 +55,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * <p>Custom scopes can be added via {@code registerScope}.
 	 * @see #registerScope
 	 */
+	// 单例及原型的常量
 	String SCOPE_SINGLETON = "singleton";
 
 	/**
@@ -74,6 +75,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * a parent BeanFactory
 	 * @see #getParentBeanFactory()
 	 */
+	// 设置父容器，父容器一旦被设置，不可改变
 	void setParentBeanFactory(BeanFactory parentBeanFactory) throws IllegalStateException;
 
 	/**
@@ -86,6 +88,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * @param beanClassLoader the class loader to use,
 	 * or {@code null} to suggest the default class loader
 	 */
+	// 为Bean设置指定的类加载器
 	void setBeanClassLoader(@Nullable ClassLoader beanClassLoader);
 
 	/**
@@ -93,6 +96,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * (only {@code null} if even the system ClassLoader isn't accessible).
 	 * @see org.springframework.util.ClassUtils#forName(String, ClassLoader)
 	 */
+	// 获取类型加载器，可能返回null,代表系统类加载器不可访问
 	@Nullable
 	ClassLoader getBeanClassLoader();
 
@@ -105,6 +109,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * then removed once the BeanFactory completes its bootstrap phase.
 	 * @since 2.5
 	 */
+	// 设置临时的类加载器，在进行类加载时期织入时会用到（loadTimeWeaver）
 	void setTempClassLoader(@Nullable ClassLoader tempClassLoader);
 
 	/**
@@ -122,6 +127,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * and in particular bean classes. If this flag is off, any creation of a bean
 	 * instance will re-query the bean class loader for newly resolved classes.
 	 */
+	// 是否缓存Bean的元数据，默认是开启的
 	void setCacheBeanMetadata(boolean cacheBeanMetadata);
 
 	/**
@@ -137,6 +143,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * here, supporting "#{...}" expressions in a Unified EL compatible style.
 	 * @since 3.0
 	 */
+	// 定义用于解析bean definition的表达式解析器
 	void setBeanExpressionResolver(@Nullable BeanExpressionResolver resolver);
 
 	/**
@@ -151,6 +158,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * property values, as an alternative to JavaBeans PropertyEditors.
 	 * @since 3.0
 	 */
+	// 数据类型转换相关
 	void setConversionService(@Nullable ConversionService conversionService);
 
 	/**
@@ -214,6 +222,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * @param valueResolver the String resolver to apply to embedded values
 	 * @since 3.0
 	 */
+	// 值解析器，例如可以使用它来处理占位符
 	void addEmbeddedValueResolver(StringValueResolver valueResolver);
 
 	/**
@@ -242,6 +251,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * will always be applied after programmatically registered ones.
 	 * @param beanPostProcessor the post-processor to register
 	 */
+	// 添加后置处理器
 	void addBeanPostProcessor(BeanPostProcessor beanPostProcessor);
 
 	/**
@@ -254,6 +264,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * @param scopeName the scope identifier
 	 * @param scope the backing Scope implementation
 	 */
+	// 注册指定名称的Scope
 	void registerScope(String scopeName, Scope scope);
 
 	/**
@@ -263,6 +274,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * @return the array of scope names, or an empty array if none
 	 * @see #registerScope
 	 */
+	// 返回所有的注册的scope的名称
 	String[] getRegisteredScopeNames();
 
 	/**
@@ -291,6 +303,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * such as BeanDefinition objects and bean name aliases.
 	 * @param otherFactory the other BeanFactory to copy from
 	 */
+	// 从另外一个容器中拷贝配置，不包含具体的bean的定义
 	void copyConfigurationFrom(ConfigurableBeanFactory otherFactory);
 
 	/**
@@ -303,6 +316,7 @@ public interface ConfigurableBeanFactory extends HierarchicalBeanFactory, Single
 	 * @param alias the alias to be registered for the bean
 	 * @throws BeanDefinitionStoreException if the alias is already in use
 	 */
+	// 为Bean注册别名
 	void registerAlias(String beanName, String alias) throws BeanDefinitionStoreException;
 
 	/**

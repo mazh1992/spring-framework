@@ -25,6 +25,9 @@ import org.springframework.context.ApplicationEvent;
  * @author Juergen Hoeller
  * @since 2.5
  */
+// 这个类是2.5版本时增加的一个类，相对于它直接的父类ApplicationEvent而言，最大的区别就是
+// 将source规定为了当前的容器。就目前而言的话这个类作用不大了，一般情况下我们定义事件也不一定需要继承这个ApplicationContextEvent
+// 后面我会介绍注解的方式进行事件的发布监听
 @SuppressWarnings("serial")
 public abstract class ApplicationContextEvent extends ApplicationEvent {
 

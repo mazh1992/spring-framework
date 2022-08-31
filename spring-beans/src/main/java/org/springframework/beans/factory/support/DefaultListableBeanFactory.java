@@ -117,6 +117,7 @@ import org.springframework.util.StringUtils;
  * @see #getBean
  * @see #resolveDependency
  */
+// 没什么好说的了，最牛逼的一个BeanFactory，拥有上面的一切功能，额外的它实现了BeanDefinitionRegistry接口，具备注册管理BeanDefinition的功能
 @SuppressWarnings("serial")
 public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFactory
 		implements ConfigurableListableBeanFactory, BeanDefinitionRegistry, Serializable {

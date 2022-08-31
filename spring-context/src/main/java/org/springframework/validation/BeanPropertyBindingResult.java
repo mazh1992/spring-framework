@@ -91,6 +91,8 @@ public class BeanPropertyBindingResult extends AbstractPropertyBindingResult imp
 	 * Creates a new one if none existed before.
 	 * @see #createBeanWrapper()
 	 */
+	// 5.跟踪这个对象的getPropertyAccessor()方法，发现就是返回了一个beanWrapper
+	// 现在明朗了吧，dataBinder最终也是依赖于beanWrapper
 	@Override
 	public final ConfigurablePropertyAccessor getPropertyAccessor() {
 		if (this.beanWrapper == null) {

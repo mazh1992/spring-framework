@@ -40,24 +40,28 @@ public interface ApplicationEventMulticaster {
 	 * Add a listener to be notified of all events.
 	 * @param listener the listener to add
 	 */
+	// 添加事件监听器
 	void addApplicationListener(ApplicationListener<?> listener);
 
 	/**
 	 * Add a listener bean to be notified of all events.
 	 * @param listenerBeanName the name of the listener bean to add
 	 */
+	// 通过名称添加事件监听器
 	void addApplicationListenerBean(String listenerBeanName);
 
 	/**
 	 * Remove a listener from the notification list.
 	 * @param listener the listener to remove
 	 */
+	// 移除事件监听器
 	void removeApplicationListener(ApplicationListener<?> listener);
 
 	/**
 	 * Remove a listener bean from the notification list.
 	 * @param listenerBeanName the name of the listener bean to remove
 	 */
+	// 根据名称移除事件监听器
 	void removeApplicationListenerBean(String listenerBeanName);
 
 	/**
@@ -65,6 +69,7 @@ public interface ApplicationEventMulticaster {
 	 * <p>After a remove call, the multicaster will perform no action
 	 * on event notification until new listeners are registered.
 	 */
+	// 移除注册在这个事件分发器上的所有监听器
 	void removeAllListeners();
 
 	/**
@@ -73,6 +78,7 @@ public interface ApplicationEventMulticaster {
 	 * if possible as it provides better support for generics-based events.
 	 * @param event the event to multicast
 	 */
+	// 分发事件
 	void multicastEvent(ApplicationEvent event);
 
 	/**
@@ -83,6 +89,7 @@ public interface ApplicationEventMulticaster {
 	 * @param eventType the type of event (can be {@code null})
 	 * @since 4.2
 	 */
+	// 分发事件，eventType代表事件类型，如果eventType为空，会从事件对象中推断出事件类型
 	void multicastEvent(ApplicationEvent event, @Nullable ResolvableType eventType);
 
 }

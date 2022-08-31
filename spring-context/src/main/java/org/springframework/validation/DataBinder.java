@@ -246,6 +246,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see #initDirectFieldAccess()
 	 * @see #createBeanPropertyBindingResult()
 	 */
+	// 3.调用了一个createBeanPropertyBindingResult，创建了一个对象，也就是通过创建的这个对象返回了一个属性访问器，那么这个对象是什么呢？接着往下看
 	public void initBeanPropertyAccess() {
 		Assert.state(this.bindingResult == null,
 				"DataBinder is already initialized - call initBeanPropertyAccess before other configuration methods");
@@ -257,6 +258,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * JavaBean property access.
 	 * @since 4.2.1
 	 */
+	// 4.可以发现创建的这个对象就是一个BeanPropertyBindingResult
 	protected AbstractPropertyBindingResult createBeanPropertyBindingResult() {
 		BeanPropertyBindingResult result = new BeanPropertyBindingResult(getTarget(),
 				getObjectName(), isAutoGrowNestedPaths(), getAutoGrowCollectionLimit());
@@ -306,6 +308,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * Return the internal BindingResult held by this DataBinder,
 	 * as an AbstractPropertyBindingResult.
 	 */
+	// 2.getInternalBindingResult()又调用了一个initBeanPropertyAccess()，从名字上来看，就是用来初始化属性访问器的，再看看这个方法干了啥
 	protected AbstractPropertyBindingResult getInternalBindingResult() {
 		if (this.bindingResult == null) {
 			initBeanPropertyAccess();
@@ -315,7 +318,9 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 
 	/**
 	 * Return the underlying PropertyAccessor of this binder's BindingResult.
+	 *
 	 */
+	// 1.获取一个属性访问器，可以看到，是通过getInternalBindingResult()方法返回的一个对象来获取的
 	protected ConfigurablePropertyAccessor getPropertyAccessor() {
 		return getInternalBindingResult().getPropertyAccessor();
 	}
@@ -323,6 +328,7 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	/**
 	 * Return this binder's underlying SimpleTypeConverter.
 	 */
+
 	protected SimpleTypeConverter getSimpleTypeConverter() {
 		if (this.typeConverter == null) {
 			this.typeConverter = new SimpleTypeConverter();
@@ -726,6 +732,8 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	public void bind(PropertyValues pvs) {
 		MutablePropertyValues mpvs = (pvs instanceof MutablePropertyValues ?
 				(MutablePropertyValues) pvs : new MutablePropertyValues(pvs));
+		// 最终调用了doBind方法，如果大家对Spring代码有所了解的话，会发现Spring中有很多doXXX的方法
+		// 形如doXXX这种命名方式的方法往往就是真正“干活”的代码，对于本例来说，肯定就是它来完成数据绑定的
 		doBind(mpvs);
 	}
 
@@ -739,8 +747,11 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	 * @see #applyPropertyValues
 	 */
 	protected void doBind(MutablePropertyValues mpvs) {
+		// 校验
 		checkAllowedFields(mpvs);
+		// 校验
 		checkRequiredFields(mpvs);
+		// 真正进行数据绑定
 		applyPropertyValues(mpvs);
 	}
 
@@ -845,6 +856,9 @@ public class DataBinder implements PropertyEditorRegistry, TypeConverter {
 	protected void applyPropertyValues(MutablePropertyValues mpvs) {
 		try {
 			// Bind request parameters onto target object.
+			// 逻辑非常简单，获取一个属性访问器，然后直接通过属性访问器将属性值设置上去
+			// IgnoreUnknownFields：忽略在Bean中找不到的属性
+			// IgnoreInvalidFields：忽略找到，但是没有访问权限的值
 			getPropertyAccessor().setPropertyValues(mpvs, isIgnoreUnknownFields(), isIgnoreInvalidFields());
 		}
 		catch (PropertyBatchUpdateException ex) {
