@@ -550,17 +550,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @see #instantiateUsingFactoryMethod
 	 * @see #autowireConstructor
 	 */
+	// 这个方法真正创建了Bean,创建一个Bean会经过 创建对象 > 依赖注入 > 初始化 这三个过程，
+	// 在这个过程中，BeanPostPorcessor会穿插执行，本文主要探讨的是创建对象的过程，所以关于依赖注入及初始化我们暂时省略，在后续的文章中再继续研究
 	protected Object doCreateBean(String beanName, RootBeanDefinition mbd, @Nullable Object[] args)
 			throws BeanCreationException {
 
 		// Instantiate the bean.
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
+			// 这行代码看起来就跟factoryBean相关，这是什么意思呢？
+			// 在下文我会通过例子介绍下，你可以暂时理解为，这个地方返回的就是个null
 			// 第一步：单例情况下，看factoryBeanInstanceCache这个缓存中是否有（FactoryBean时会有被放进去的bean）
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
 		if (instanceWrapper == null) {
-			// 第二步：这里创建对象
+			// 第二步：这里真正的创建了对象
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
 		Object bean = instanceWrapper.getWrappedInstance();
@@ -1197,12 +1201,15 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
 		}
 
+		// 通过bd中提供的instanceSupplier来获取一个对象
+		// 正常bd中都不会有这个instanceSupplier属性，这里也是Spring提供的一个扩展点，但实际上不常用
 		// 2.通过beanDefinition中的supplier实例化这个bean， supplier也是实例化bean的一种方式
 		Supplier<?> instanceSupplier = mbd.getInstanceSupplier();
 		if (instanceSupplier != null) {
 			return obtainFromSupplier(instanceSupplier, beanName);
 		}
 
+		// bd中提供了factoryMethodName属性，那么要使用工厂方法的方式来创建对象，工厂方法又会区分静态工厂方法跟实例工厂方法
 		// 3.通过FactoryMethod实例化这个bean
 		if (mbd.getFactoryMethodName() != null) {
 			return instantiateUsingFactoryMethod(beanName, mbd, args);
@@ -1211,8 +1218,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 4.下面这段代码都是在通过构造函数实例化这个Bean,分两种情况
 		// 一种是通过默认的无参构造
 		// 一种是通过推断出来的构造函数
-		boolean resolved = false;
-		boolean autowireNecessary = false;
+		boolean resolved = false;  // 是否推断过构造函数
+		boolean autowireNecessary = false; // 构造函数是否需要进行注入
 		// 原型情况下避免多次解析
 		if (args == null) {
 			synchronized (mbd.constructorArgumentLock) {
@@ -1233,7 +1240,18 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Candidate constructors for autowiring?
 		// 跟后置处理器相关，我们主要关注这行代码
+		// 推断出能够使用的需要参数的构造函数
 		Constructor<?>[] ctors = determineConstructorsFromBeanPostProcessors(beanClass, beanName);
+		// 在推断出来的构造函数中选取一个合适的方法来进行Bean的实例化
+		// ctors不为null：说明存在1个或多个@Autowired标注的方法
+		// mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR：说明是自动注入
+		// mbd.hasConstructorArgumentValues()：配置文件中配置了构造函数要使用的参数
+		// !ObjectUtils.isEmpty(args)：外部传入的参数，必定为null,不多考虑
+		// 上面的条件只要满足一个就会进入到autowireConstructor方法
+		// 第一个条件满足，那么通过autowireConstructor在推断出来的构造函数中再进一步选择一个差异值最小的，参数最长的构造函数
+		// 第二个条件满足，说明没有@Autowired标注的方法，但是需要进行自动注入，那么通过autowireConstructor会去遍历类中申明的所有构造函数，并查找一个差异值最小的，参数最长的构造函数
+		// 第三个条件满足，说明不是自动注入，那么要通过配置中的参数去类中申明的所有构造函数中匹配
+		// 第四个必定为null,不考虑
 		if (ctors != null || mbd.getResolvedAutowireMode() == AUTOWIRE_CONSTRUCTOR ||
 				mbd.hasConstructorArgumentValues() || !ObjectUtils.isEmpty(args)) {
 			return autowireConstructor(beanName, mbd, ctors, args);
@@ -1311,10 +1329,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.config.SmartInstantiationAwareBeanPostProcessor#determineCandidateConstructors
 	 */
+	// 实际调用的就是AutowiredAnnotationBeanPostProcessor中的determineCandidateConstructors方法
+	// 这个方法看起来很长，但实际确很简单，就是通过@Autowired注解确定哪些构造方法可以作为候选方法，其实在使用factoryMethod来实例化对象的时候也有这种逻辑在其中，后续在总结的时候我们对比一下
 	@Nullable
 	protected Constructor<?>[] determineConstructorsFromBeanPostProcessors(@Nullable Class<?> beanClass, String beanName)
 			throws BeansException {
-
+		// 这里做的事情很简单，就是将@Lookup注解标注的方法封装成LookupOverride添加到BeanDefinition中的methodOverrides属性中，
+		// 如果这个属性不为空，在实例化对象的时候不能选用SimpleInstantiationStrateg,而要使用CglibSubclassingInstantiationStrategy，通过cglib代理给方法加一层拦截了逻辑
+		// 避免重复检查
 		if (beanClass != null && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {

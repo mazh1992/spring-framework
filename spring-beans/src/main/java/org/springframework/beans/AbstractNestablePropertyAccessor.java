@@ -106,10 +106,12 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 	 * (can be suppressed if the accessor won't need any type conversion)
 	 * @see #setWrappedInstance
 	 */
+	// 调用到父类的构造函数，确定要使用默认的属性编辑器
 	protected AbstractNestablePropertyAccessor(boolean registerDefaultEditors) {
 		if (registerDefaultEditors) {
 			registerDefaultEditors();
 		}
+		// 对typeConverterDelegate进行初始化
 		this.typeConverterDelegate = new TypeConverterDelegate(this);
 	}
 

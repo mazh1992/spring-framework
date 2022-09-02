@@ -95,6 +95,7 @@ class ConfigurationClassEnhancer {
 	 * @return the enhanced subclass
 	 */
 	public Class<?> enhance(Class<?> configClass, @Nullable ClassLoader classLoader) {
+		// 如果已经实现了EnhancedConfiguration接口，说明被代理过了，直接返回
 		if (EnhancedConfiguration.class.isAssignableFrom(configClass)) {
 			if (logger.isDebugEnabled()) {
 				logger.debug(String.format("Ignoring request to enhance %s as it has " +
@@ -106,6 +107,7 @@ class ConfigurationClassEnhancer {
 			}
 			return configClass;
 		}
+		// 否则调用newEnhancer方法先创建一个增强器，然后直接使用这个增强器生成代理类的字节码对象
 		Class<?> enhancedClass = createClass(newEnhancer(configClass, classLoader));
 		if (logger.isTraceEnabled()) {
 			logger.trace(String.format("Successfully enhanced %s; enhanced class name is: %s",
@@ -119,11 +121,19 @@ class ConfigurationClassEnhancer {
 	 */
 	private Enhancer newEnhancer(Class<?> configSuperClass, @Nullable ClassLoader classLoader) {
 		Enhancer enhancer = new Enhancer();
+		// 设置目标类
 		enhancer.setSuperclass(configSuperClass);
+		// 让代理类实现EnhancedConfiguration接口，这个接口继承了BeanFactoryAware接口
+		// 主要两个作用：1.起到标记作用，如果实现了，代表已经被代理过了
+		// 2.代理类需要访问BeanFactory，所有实现了BeanFactoryAware接口
 		enhancer.setInterfaces(new Class<?>[] {EnhancedConfiguration.class});
+		// 设置生成的代理类不实现factory接口
 		enhancer.setUseFactory(false);
+		// 设置代理类名称的生成策略
 		enhancer.setNamingPolicy(SpringNamingPolicy.INSTANCE);
+		// 代理类中引入一个BeanFactory字段
 		enhancer.setStrategy(new BeanFactoryAwareGeneratorStrategy(classLoader));
+		// 设置过滤器，CALLBACK_FILTER中也同时设置了拦截器
 		enhancer.setCallbackFilter(CALLBACK_FILTER);
 		enhancer.setCallbackTypes(CALLBACK_FILTER.getCallbackTypes());
 		return enhancer;
@@ -133,6 +143,7 @@ class ConfigurationClassEnhancer {
 	 * Uses enhancer to generate a subclass of superclass,
 	 * ensuring that callbacks are registered for the new subclass.
 	 */
+	// 使用增强器生成代理类的字节码对象
 	private Class<?> createClass(Enhancer enhancer) {
 		Class<?> subclass = enhancer.createClass();
 		// Registering callbacks statically (as opposed to thread-local)
@@ -239,18 +250,27 @@ class ConfigurationClassEnhancer {
 		@Override
 		@Nullable
 		public Object intercept(Object obj, Method method, Object[] args, MethodProxy proxy) throws Throwable {
+			// 在生成代理类的字节码时，使用了BeanFactoryAwareGeneratorStrategy策略
+			// 这个策略会在代理类中添加一个字段，BEAN_FACTORY_FIELD = "$$beanFactory"
 			Field field = ReflectionUtils.findField(obj.getClass(), BEAN_FACTORY_FIELD);
 			Assert.state(field != null, "Unable to find generated BeanFactory field");
+			// 此时调用的方法是setBeanFactory方法，
+			// 直接通过反射将beanFactory赋值给BEAN_FACTORY_FIELD字段
 			field.set(obj, args[0]);
 
 			// Does the actual (non-CGLIB) superclass implement BeanFactoryAware?
 			// If so, call its setBeanFactory() method. If not, just exit.
+			// 如果目标配置类直接实现了BeanFactoryAware接口，那么直接调用目标类的setBeanFactory方法
 			if (BeanFactoryAware.class.isAssignableFrom(ClassUtils.getUserClass(obj.getClass().getSuperclass()))) {
 				return proxy.invokeSuper(obj, args);
 			}
 			return null;
 		}
 
+		// 在调用setBeanFactory方法时才会拦截
+		// 从前文我们知道，代理类是实现了实现EnhancedConfiguration接口的，
+		// 这就意味着它也实现了BeanFactoryAware接口，那么在创建配置类时，
+		// setBeanFactory方法就会被调用，之后会就进入到这个拦截器的intercept方法逻辑中
 		@Override
 		public boolean isMatch(Method candidateMethod) {
 			return isSetBeanFactory(candidateMethod);
@@ -283,14 +303,18 @@ class ConfigurationClassEnhancer {
 		@Nullable
 		public Object intercept(Object enhancedConfigInstance, Method beanMethod, Object[] beanMethodArgs,
 					MethodProxy cglibMethodProxy) throws Throwable {
-
+			// 之前不是给BEAN_FACTORY_FIELD这个字段赋值了BeanFactory吗，这里就是反射获取之前赋的值
 			ConfigurableBeanFactory beanFactory = getBeanFactory(enhancedConfigInstance);
+			// 确定Bean的名称
 			String beanName = BeanAnnotationHelper.determineBeanNameFor(beanMethod);
 
 			// Determine whether this bean is a scoped-proxy
+			// 判断这个Bean是否是一个域代理的类
 			if (BeanAnnotationHelper.isScopedProxy(beanMethod)) {
 				String scopedBeanName = ScopedProxyCreator.getTargetBeanName(beanName);
+				// 域代理对象的目标对象正在被创建,什么时候会被创建？当然是使用的时候嘛
 				if (beanFactory.isCurrentlyInCreation(scopedBeanName)) {
+					// 使用的时候调用@Bean方法来创建这个域代理的目标对象，所以@Bean方法代理的时候针对的是域代理的目标对象，目标对象需要通过getBean的方式创建
 					beanName = scopedBeanName;
 				}
 			}
@@ -302,18 +326,27 @@ class ConfigurationClassEnhancer {
 			// proxy that intercepts calls to getObject() and returns any cached bean instance.
 			// This ensures that the semantics of calling a FactoryBean from within @Bean methods
 			// is the same as that of referring to a FactoryBean within XML. See SPR-6602.
+			// 判断这个bean是否是一个factoryBean
 			if (factoryContainsBean(beanFactory, BeanFactory.FACTORY_BEAN_PREFIX + beanName) &&
 					factoryContainsBean(beanFactory, beanName)) {
 				Object factoryBean = beanFactory.getBean(BeanFactory.FACTORY_BEAN_PREFIX + beanName);
 				if (factoryBean instanceof ScopedProxyFactoryBean) {
 					// Scoped proxy factory beans are a special case and should not be further proxied
+					// ScopedProxyFactoryBean还记得吗？在进行域代理时使用的就是这个对象
+					// 对于这个FactoryBean我们是不需要进行代理的，因为这个factoryBean的getObject方法
+					// 只是为了得到一个类似于占位符的Bean,这个Bean只是为了让依赖它的Bean在创建的过程中不会报错
+					// 所以对于这个FactoryBean我们是不需要进行代理的
+					// 我们只需要保证这个FactoryBean所生成的代理对象的目标对象是通过getBean的方式创建的即可
 				}
 				else {
+					// 而对于普通的FactoryBean我们需要代理其getObject方法，确保getObject方法产生的Bean是通过getBean的方式创建的
 					// It is a candidate FactoryBean - go ahead with enhancement
 					return enhanceFactoryBean(factoryBean, beanMethod.getReturnType(), beanFactory, beanName);
 				}
 			}
-
+			// 举个例子，假设我们被@Bean标注的是A方法，当前创建的BeanName也是a，这样就符合了这个条件
+			// 但是如果是这种请求，a(){b()},a方法中调用的b方法，那么此时调用b方法创建b对象时正在执行的就是a方法
+			// 此时就不满足这个条件，会调用这个resolveBeanReference方法来解决方法引用
 			if (isCurrentlyInvokedFactoryMethod(beanMethod)) {
 				// The factory is calling the bean method in order to instantiate and register the bean
 				// (i.e. via a getBean() call) -> invoke the super implementation of the method to actually
@@ -328,6 +361,8 @@ class ConfigurationClassEnhancer {
 									"these container lifecycle issues; see @Bean javadoc for complete details.",
 							beanMethod.getDeclaringClass().getSimpleName(), beanMethod.getName()));
 				}
+				// 如果当前执行的方法就是这个被拦截的方法，（说明是在创建这个Bean的过程中）
+				// 那么直接执行目标类中的方法，也就是我们在配置类中用@Bean标注的方法
 				return cglibMethodProxy.invokeSuper(enhancedConfigInstance, beanMethodArgs);
 			}
 
@@ -402,6 +437,9 @@ class ConfigurationClassEnhancer {
 
 		@Override
 		public boolean isMatch(Method candidateMethod) {
+			// 第一个条件，不能是Object，这个必定是满足的
+			// 第二个条件，不能是setBeanFactory方法，显而易见的嘛，我们要拦截的方法实际只应该是添加了@Bean注解的方法
+			// 第三个条件，添加了@Bean注解
 			return (candidateMethod.getDeclaringClass() != Object.class &&
 					!BeanFactoryAwareMethodInterceptor.isSetBeanFactory(candidateMethod) &&
 					BeanAnnotationHelper.isBeanAnnotated(candidateMethod));

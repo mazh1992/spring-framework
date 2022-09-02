@@ -869,13 +869,19 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
 		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		// 所有bd的名称
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
 		// Trigger initialization of all non-lazy singleton beans...
+		// 遍历所有bd，一个个进行创建
 		for (String beanName : beanNames) {
+			// 获取到指定名称对应的bd
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+			// 对不是延迟加载的单例的Bean进行创建
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				// 判断是否是一个FactoryBean
 				if (isFactoryBean(beanName)) {
+					// 如果是一个factoryBean的话，先创建这个factoryBean，创建factoryBean时，需要在beanName前面拼接一个&符号
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
@@ -886,10 +892,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 									getAccessControlContext());
 						}
 						else {
+							// 判断是否是一个SmartFactoryBean，并且不是懒加载的，就意味着，在创建了这个factoryBean之后要立马调用它的getObject方法创建另外一个Bean
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
 						if (isEagerInit) {
+							// 不是factoryBean的话，我们直接创建就行了
 							getBean(beanName);
 						}
 					}
@@ -901,8 +909,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		}
 
 		// Trigger post-initialization callback for all applicable beans...
+		// 在创建了所有的Bean之后，遍历
 		for (String beanName : beanNames) {
+			// 这一步其实是从缓存中获取对应的创建的Bean，这里获取到的必定是单例的
 			Object singletonInstance = getSingleton(beanName);
+			// 判断是否是一个SmartInitializingSingleton，最典型的就是我们之前分析过的EventListenerMethodProcessor，
+			// 在这一步完成了对已经创建好的Bean的解析，会判断其方法上是否有	@EventListener注解，
+			// 会将这个注解标注的方法通过EventListenerFactory转换成一个事件监听器并添加到监听器的集合中
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
 				if (System.getSecurityManager() != null) {

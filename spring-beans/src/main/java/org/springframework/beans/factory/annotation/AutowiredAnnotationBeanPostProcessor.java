@@ -254,12 +254,17 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		this.injectionMetadataCache.remove(beanName);
 	}
 
+	// 实际调用的就是AutowiredAnnotationBeanPostProcessor中的determineCandidateConstructors方法
+	// 这个方法看起来很长，但实际确很简单，就是通过@Autowired注解确定哪些构造方法可以作为候选方法，其实在使用factoryMethod来实例化对象的时候也有这种逻辑在其中，后续在总结的时候我们对比一下
+
 	@Override
 	@Nullable
 	public Constructor<?>[] determineCandidateConstructors(Class<?> beanClass, final String beanName)
 			throws BeanCreationException {
 
 		// Let's check for lookup methods here...
+		// 这里做的事情很简单，就是将@Lookup注解标注的方法封装成LookupOverride添加到BeanDefinition中的methodOverrides属性中，如果这个属性不为空，在实例化对象的时候不能选用SimpleInstantiationStrateg,而要使用CglibSubclassingInstantiationStrategy，通过cglib代理给方法加一层拦截了逻辑
+		// 避免重复检查
 		if (!this.lookupMethodsChecked.contains(beanName)) {
 			if (AnnotationUtils.isCandidateClass(beanClass, Lookup.class)) {
 				try {
@@ -271,6 +276,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								Assert.state(this.beanFactory != null, "No BeanFactory available");
 								LookupOverride override = new LookupOverride(method, lookup.value());
 								try {
+									// 添加到BeanDefinition中的methodOverrides属性中
 									RootBeanDefinition mbd = (RootBeanDefinition)
 											this.beanFactory.getMergedBeanDefinition(beanName);
 									mbd.getMethodOverrides().addOverride(override);
@@ -294,14 +300,18 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 		}
 
 		// Quick check on the concurrent map first, with minimal locking.
+		// 接下来要开始确定到底哪些构造函数能被作为候选者
+		// 先尝试从缓存中获取
 		Constructor<?>[] candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 		if (candidateConstructors == null) {
 			// Fully synchronized resolution now...
 			synchronized (this.candidateConstructorsCache) {
 				candidateConstructors = this.candidateConstructorsCache.get(beanClass);
+				// 缓存中无法获取到，进入正式的推断过程
 				if (candidateConstructors == null) {
 					Constructor<?>[] rawCandidates;
 					try {
+						// 第一步：先查询这个类所有的构造函数，包括私有的
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -310,22 +320,30 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 					}
 					List<Constructor<?>> candidates = new ArrayList<>(rawCandidates.length);
+					// 保存添加了Autowired注解并且required属性为true的构造方法
 					Constructor<?> requiredConstructor = null;
+					// 空参构造
 					Constructor<?> defaultConstructor = null;
+					// 看方法注释上说明的，这里除非是kotlin的类，否则必定为null,不做过多考虑，我们就将其当作null
 					Constructor<?> primaryConstructor = BeanUtils.findPrimaryConstructor(beanClass);
 					int nonSyntheticConstructors = 0;
+					// 对类中的所有构造方法进行遍历
 					for (Constructor<?> candidate : rawCandidates) {
+						// 非合成方法
 						if (!candidate.isSynthetic()) {
 							nonSyntheticConstructors++;
 						}
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						// 查询方法上是否有Autowired注解
 						MergedAnnotation<?> ann = findAutowiredAnnotation(candidate);
 						if (ann == null) {
+							// userClass != beanClass说明这个类进行了cglib代理
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
 							if (userClass != beanClass) {
 								try {
+									// 如果进行了cglib代理，那么在父类上再次查找Autowired注解
 									Constructor<?> superCtor =
 											userClass.getDeclaredConstructor(candidate.getParameterTypes());
 									ann = findAutowiredAnnotation(superCtor);
@@ -335,6 +353,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								}
 							}
 						}
+						// 说明当前的这个构造函数上有Autowired注解
 						if (ann != null) {
 							if (requiredConstructor != null) {
 								throw new BeanCreationException(beanName,
@@ -342,8 +361,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 										". Found constructor with 'required' Autowired annotation already: " +
 										requiredConstructor);
 							}
+							// 获取Autowired注解中的required属性
 							boolean required = determineRequiredStatus(ann);
 							if (required) {
+								// 类中存在多个@Autowired标注的方法，并且某个方法的@Autowired注解上被申明了required属性要为true,那么直接报错
 								if (!candidates.isEmpty()) {
 									throw new BeanCreationException(beanName,
 											"Invalid autowire-marked constructors: " + candidates +
@@ -352,16 +373,22 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 								}
 								requiredConstructor = candidate;
 							}
+							// 添加到集合中，这个集合存储的都是被@Autowired注解标注的方法
 							candidates.add(candidate);
 						}
+						// 空参构造函数
 						else if (candidate.getParameterCount() == 0) {
 							defaultConstructor = candidate;
 						}
 					}
 					if (!candidates.isEmpty()) {
 						// Add default constructor to list of optional constructors, as fallback.
+						// 存在多个被@Autowired标注的方法
+						// 并且所有的required属性被设置成了false (默认为true)
 						if (requiredConstructor == null) {
+							// 存在空参构造函数，注意，空参构造函数可以不被@Autowired注解标注
 							if (defaultConstructor != null) {
+								// 将空参构造函数也加入到候选的方法中去
 								candidates.add(defaultConstructor);
 							}
 							else if (candidates.size() == 1 && logger.isInfoEnabled()) {
@@ -373,17 +400,21 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						}
 						candidateConstructors = candidates.toArray(new Constructor<?>[0]);
 					}
+					// 也就是说，类中只提供了一个构造函数，并且这个构造函数不是空参构造函数
 					else if (rawCandidates.length == 1 && rawCandidates[0].getParameterCount() > 0) {
 						candidateConstructors = new Constructor<?>[] {rawCandidates[0]};
 					}
+					// primaryConstructor必定为null，不考虑
 					else if (nonSyntheticConstructors == 2 && primaryConstructor != null &&
 							defaultConstructor != null && !primaryConstructor.equals(defaultConstructor)) {
 						candidateConstructors = new Constructor<?>[] {primaryConstructor, defaultConstructor};
 					}
+					// primaryConstructor必定为null，不考虑
 					else if (nonSyntheticConstructors == 1 && primaryConstructor != null) {
 						candidateConstructors = new Constructor<?>[] {primaryConstructor};
 					}
 					else {
+						// 说明无法推断出来
 						candidateConstructors = new Constructor<?>[0];
 					}
 					this.candidateConstructorsCache.put(beanClass, candidateConstructors);

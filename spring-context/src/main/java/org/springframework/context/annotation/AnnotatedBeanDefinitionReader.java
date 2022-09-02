@@ -48,12 +48,17 @@ import org.springframework.util.Assert;
  */
 public class AnnotatedBeanDefinitionReader {
 
+	// 上面我们已经说了，这个reader对象主要的工作就是注册BeanDefinition，那么将BeanDefinition注册到哪里去呢？
+	// 所以它内部就保存了一个BeanDefinition的注册表。对应的就是我们代码中的AnnotationConfigApplicationContext
 	private final BeanDefinitionRegistry registry;
 
+	// 见名知意，Bean名称的生成器，生成BeanName
 	private BeanNameGenerator beanNameGenerator = AnnotationBeanNameGenerator.INSTANCE;
 
+	// 解析@Scope注解
 	private ScopeMetadataResolver scopeMetadataResolver = new AnnotationScopeMetadataResolver();
 
+	// 解析@Conditional注解
 	private ConditionEvaluator conditionEvaluator;
 
 
@@ -83,8 +88,10 @@ public class AnnotatedBeanDefinitionReader {
 	public AnnotatedBeanDefinitionReader(BeanDefinitionRegistry registry, Environment environment) {
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
 		Assert.notNull(environment, "Environment must not be null");
+		// 为read对象中的属性赋值
 		this.registry = registry;
 		this.conditionEvaluator = new ConditionEvaluator(registry, environment, null);
+		// 从这个方法可以看出，Spring在创建reader对象的时候就开始注册bd了，那么Spring注册了哪些bd呢？注册的bd有什么用呢？我们接着往下看
 		AnnotationConfigUtils.registerAnnotationConfigProcessors(this.registry);
 	}
 
@@ -143,6 +150,7 @@ public class AnnotatedBeanDefinitionReader {
 	 * class-declared annotations.
 	 * @param beanClass the class of the bean
 	 */
+	// 将解析指定的类成为BeanDefinition并注册到容器中
 	public void registerBean(Class<?> beanClass) {
 		doRegisterBean(beanClass, null, null, null, null);
 	}
@@ -155,6 +163,7 @@ public class AnnotatedBeanDefinitionReader {
 	 * (or {@code null} for generating a default bean name)
 	 * @since 5.2
 	 */
+	// 真正的执行注册的方法
 	public void registerBean(Class<?> beanClass, @Nullable String name) {
 		doRegisterBean(beanClass, name, null, null, null);
 	}
@@ -250,17 +259,28 @@ public class AnnotatedBeanDefinitionReader {
 			@Nullable Class<? extends Annotation>[] qualifiers, @Nullable Supplier<T> supplier,
 			@Nullable BeanDefinitionCustomizer[] customizers) {
 
+		// Spring在这里写死了，直接new了一个AnnotatedGenericBeanDefinition，也就是说通过reader对象注册的BeanDefinition都是AnnotatedGenericBeanDefinition。
 		AnnotatedGenericBeanDefinition abd = new AnnotatedGenericBeanDefinition(beanClass);
+		// 调用conditionEvaluator的shouldSkip方法
+		// 判断当前的这个bd是否需要被注册
 		if (this.conditionEvaluator.shouldSkip(abd.getMetadata())) {
 			return;
 		}
-
+		// 在注册时可以提供一个instanceSupplier
 		abd.setInstanceSupplier(supplier);
+		// 解析@Scope注解，得到一个ScopeMetadata
 		ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(abd);
+		// 将@Scope注解中的信息保存到bd中
 		abd.setScope(scopeMetadata.getScopeName());
+		// 调用beanNameGenerator生成beanName
+		// 所谓的注册bd就是指定将bd放入到容器中的一个beanDefinitionMap中
+		// 其中的key就是beanName,value就是解析class后得到的bd
 		String beanName = (name != null ? name : this.beanNameGenerator.generateBeanName(abd, this.registry));
-
+		// 这句代码将进一步解析class上的注解信息，Spring在创建这个abd的信息时候就已经将当前的class放入其中了，所有这行代码主要做的就是通过class对象获取到上面的注解（包括@Lazy，@Primary，@DependsOn注解等等），然后将得到注解中对应的配置信息并放入到bd中的属性中
 		AnnotationConfigUtils.processCommonDefinitionAnnotations(abd);
+		// 正常的容器启动阶段qualifiers肯定等于null
+		// 我能想到的不为空的方法就是直接在外部调用了register方法并且出入了qualifiers参数
+		// 就是说我们手动直接注册了一个类，但是我们没有在类上添加@Lazy，@Primary注解，但是我们又希望能将其标记为Primary为true/LazyInit为true,这个时候就手动传入Primary.class跟Lazy.class即可。
 		if (qualifiers != null) {
 			for (Class<? extends Annotation> qualifier : qualifiers) {
 				if (Primary.class == qualifier) {
@@ -275,13 +295,19 @@ public class AnnotatedBeanDefinitionReader {
 			}
 		}
 		if (customizers != null) {
+			// 我们注册时，我们可以传入一些回调方法，在解析得到bd后调用
 			for (BeanDefinitionCustomizer customizer : customizers) {
 				customizer.customize(abd);
 			}
 		}
 
+		// bd中是没有beanName属性的，BeanDefinitionHolder中就是保存了beanName以及对应的BeanDefinition
 		BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(abd, beanName);
+		// 这个地方主要是解析Scope中的ProxyMode属性，默认为no，不生成代理对象
+		// 后文做详细分析
 		definitionHolder = AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
+		// 注册bd到容器中，实际上最终就是将bd放到了beanFactory中的一个map里（beanDefinitionMap）
+		// key为beanName,value为bd
 		BeanDefinitionReaderUtils.registerBeanDefinition(definitionHolder, this.registry);
 	}
 

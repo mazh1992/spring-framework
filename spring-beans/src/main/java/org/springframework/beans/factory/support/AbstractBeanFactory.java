@@ -246,11 +246,13 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected <T> T doGetBean(
 			String name, @Nullable Class<T> requiredType, @Nullable Object[] args, boolean typeCheckOnly)
 			throws BeansException {
-
+		// 前面我们说过了，传入的name可能时& + beanName这种形式，这里做的就是去除掉&，得到beanName
 		String beanName = transformedBeanName(name);
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
+		// 这个方法就很牛逼了，通过它解决了循环依赖的问题，不过目前我们只需要知道它是从单例池中获取已经创建的Bean即可，循环依赖后面我单独写一篇文章
+		// 方法作用：已经创建的Bean会被放到单例池中，这里就是从单例池中获取
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isTraceEnabled()) {
@@ -262,17 +264,23 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					logger.trace("Returning cached instance of singleton bean '" + beanName + "'");
 				}
 			}
+			// 如果直接从单例池中获取到了这个bean(sharedInstance),我们能直接返回吗？
+			// 当然不能，因为获取到的Bean可能是一个factoryBean,如果我们传入的name是 & + beanName 这种形式的话，那是可以返回的，
+			// 但是我们传入的更可能是一个beanName，那么这个时候Spring就还需要调用这个sharedInstance的getObject方法来创建真正被需要的Bean
 			bean = getObjectForBeanInstance(sharedInstance, name, beanName, null);
 		}
 
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
+			// 在缓存中获取不到这个Bean
+			// 原型下的循环依赖直接报错
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
 			// Check if bean definition exists in this factory.
+			// 核心要义，找不到我们就从父容器中再找一次
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
@@ -294,24 +302,32 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 			}
 
+			// 如果不仅仅是为了类型推断，也就是代表我们要对进行实例化
+			// 那么就将bean标记为正在创建中，其实就是将这个beanName放入到alreadyCreated这个set集合中
 			if (!typeCheckOnly) {
 				markBeanAsCreated(beanName);
 			}
 
 			try {
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+				// 检查合并后的bd是否是abstract,这个检查现在已经没有作用了，必定会通过
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				// @DependsOn注解标注的当前这个Bean所依赖的bean名称的集合，就是说在创建当前这个Bean前，必须要先将其依赖的Bean先完成创建
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
+					// 遍历所有申明的依赖
 					for (String dep : dependsOn) {
+						// 如果这个bean所依赖的bean又依赖了当前这个bean,出现了循环依赖，直接报错
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+						// 注册bean跟其依赖的依赖关系，key为依赖，value为依赖所从属的bean
 						registerDependentBean(dep, beanName);
 						try {
+							// 先创建其依赖的Bean
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
@@ -322,7 +338,9 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				// Create bean instance.
+				// 我们目前只分析单例的创建，单例看懂了，原型自然就懂了
 				if (mbd.isSingleton()) {
+					// 这里再次调用了getSingleton方法，这里跟方法开头调用的getSingleton的区别在于，这个方法多传入了一个ObjectFactory类型的参数，这个ObjectFactory会返回一个Bean
 					sharedInstance = getSingleton(beanName, () -> {
 						try {
 							return createBean(beanName, mbd, args);
@@ -1228,7 +1246,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 * Can be overridden in subclasses.
 	 * @param bw the BeanWrapper to initialize
 	 */
+	// 初始化BeanWrapper，主要就是将容器中配置的conversionService赋值到当前这个BeanWrapper上
+	// 同时注册定制的属性编辑器
 	protected void initBeanWrapper(BeanWrapper bw) {
+		//还记得conversionService在什么时候被放到容器中的吗?就是在finishBeanFactoryInitialization的时候啦~！
+		// org.springframework.context.support.AbstractApplicationContext.finishBeanFactoryInitialization
 		bw.setConversionService(getConversionService());
 		registerCustomEditors(bw);
 	}
@@ -1245,8 +1267,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		PropertyEditorRegistrySupport registrySupport =
 				(registry instanceof PropertyEditorRegistrySupport ? (PropertyEditorRegistrySupport) registry : null);
 		if (registrySupport != null) {
+			// 这个配置的作用就是在注册默认的属性编辑器时，可以增加对数组到字符串的转换功能
+			// 默认就是通过","来切割字符串转换成数组，对应的属性编辑器就是StringArrayPropertyEditor
 			registrySupport.useConfigValueEditors();
 		}
+		// 将容器中的属性编辑器注册到当前的这个BeanWrapper
 		if (!this.propertyEditorRegistrars.isEmpty()) {
 			for (PropertyEditorRegistrar registrar : this.propertyEditorRegistrars) {
 				try {
@@ -1271,6 +1296,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 			}
 		}
+		// 这里我们没有添加任何的自定义的属性编辑器，所以肯定为空
 		if (!this.customEditors.isEmpty()) {
 			this.customEditors.forEach((requiredType, editorClass) ->
 					registry.registerCustomEditor(requiredType, BeanUtils.instantiateClass(editorClass)));

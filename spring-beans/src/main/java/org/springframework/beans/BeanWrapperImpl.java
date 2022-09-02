@@ -82,7 +82,9 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * Registers default editors.
 	 * @see #setWrappedInstance
 	 */
+	// 第一步：调用空参构造
 	public BeanWrapperImpl() {
+		// 调用另外一个构造函数，表示要注册默认的属性编辑器
 		this(true);
 	}
 
@@ -92,7 +94,9 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 	 * (can be suppressed if the BeanWrapper won't need any type conversion)
 	 * @see #setWrappedInstance
 	 */
+	// 这个构造函数表明是否要注册默认编辑器，上面传入的值为true,表示需要注册
 	public BeanWrapperImpl(boolean registerDefaultEditors) {
+		// 调用到父类的构造函数，确定要使用默认的属性编辑器
 		super(registerDefaultEditors);
 	}
 
