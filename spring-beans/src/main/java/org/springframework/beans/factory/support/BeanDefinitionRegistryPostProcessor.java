@@ -39,6 +39,11 @@ public interface BeanDefinitionRegistryPostProcessor extends BeanFactoryPostProc
 	 * bean definitions before the next post-processing phase kicks in.
 	 * @param registry the bean definition registry used by the application context
 	 * @throws org.springframework.beans.BeansException in case of errors
+	 *
+	 * BeanDefinition的后处理，BeanDefinition在之前就已经解析完了，这里是专门为了处理配置类的，
+	 * 因为配置本身也是一个bean，他在前期被加载进了容器
+	 * 所以在这个后置处理中，要把配置类再拿出来，解析一遍。
+	 * 配置类，例如：被@Configuration 注解标注的，里面都是@Bean这样的类
 	 */
 	void postProcessBeanDefinitionRegistry(BeanDefinitionRegistry registry) throws BeansException;
 

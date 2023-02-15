@@ -33,6 +33,9 @@ public class ReaderContext {
 
 	private final ProblemReporter problemReporter;
 
+	/**
+	 * beanDefinition定义解析好后，会拿这个发通知
+	 */
 	private final ReaderEventListener eventListener;
 
 	private final SourceExtractor sourceExtractor;

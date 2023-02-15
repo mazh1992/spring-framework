@@ -235,6 +235,7 @@ public class ConfigurationClassPostProcessor implements BeanDefinitionRegistryPo
 		}
 		this.registriesPostProcessed.add(registryId);
 		// 从名字来看这个方法是再对配置类的bd进行处理
+		// 就是解析配置的 例如 @Configuration
 		processConfigBeanDefinitions(registry);
 	}
 

@@ -90,7 +90,7 @@ final class PostProcessorRegistrationDelegate {
 			List<BeanDefinitionRegistryPostProcessor> currentRegistryProcessors = new ArrayList<>();
 
 			// First, invoke the BeanDefinitionRegistryPostProcessors that implement PriorityOrdered.
-			// 发生一次bd的合并
+			// 发生一次bd的合并（bd合并是，）
 			// 这里只会获取实现了BeanDefinitionRegistryPostProcessor接口的Bean的名字
 			// 从容器中获取到所有实现了BeanDefinitionRegistryPostProcessor接口的Bean的名字
 			String[] postProcessorNames =
