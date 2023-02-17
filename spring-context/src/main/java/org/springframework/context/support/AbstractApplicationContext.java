@@ -941,7 +941,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.freezeConfiguration();
 
 		// Instantiate all remaining (non-lazy-init) singletons.
-		// 开始进行真正的创建
+		// 开始进行真正的创建（只有单例的。懒加载的，原型的，在调用的时候才实例化）
 		beanFactory.preInstantiateSingletons();
 	}
 
@@ -956,10 +956,12 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Initialize lifecycle processor for this context.
 		// 初始化生命周期
+		// 这是一个容器的生命周期，会获取所有实现了Lifecycle接口的类
 		initLifecycleProcessor();
 
 		// Propagate refresh to lifecycle processor first.
 		// 获取上面初始化的生命周期，然后刷新
+		// 来调用Lifecycle接口实现类，可以用来在这个时间点，做点事情。
 		getLifecycleProcessor().onRefresh();
 
 		// Publish the final event.

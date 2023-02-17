@@ -309,6 +309,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			}
 
 			try {
+				// 这个合并，就是子类要合并父类的定义
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				// 检查合并后的bd是否是abstract,这个检查现在已经没有作用了，必定会通过
 				checkMergedBeanDefinition(mbd, beanName, args);
@@ -1315,6 +1316,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
 		// Quick check on the concurrent map first, with minimal locking.
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
+
+		// 存在，且不需要再次合并
 		if (mbd != null && !mbd.stale) {
 			return mbd;
 		}
@@ -1360,6 +1363,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 			if (mbd == null || mbd.stale) {
 				previous = mbd;
+
+				// 是否有父bean
 				if (bd.getParentName() == null) {
 					// Use copy of given root bean definition.
 					if (bd instanceof RootBeanDefinition) {
@@ -1371,6 +1376,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 				else {
 					// Child bean definition: needs to be merged with parent.
+					// 子类合并父类的定义
 					BeanDefinition pbd;
 					try {
 						String parentBeanName = transformedBeanName(bd.getParentName());

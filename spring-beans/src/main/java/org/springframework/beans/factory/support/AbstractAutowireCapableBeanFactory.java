@@ -612,7 +612,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Initialize the bean instance.
 		Object exposedObject = bean;
 		try {
-			// 第五步：属性注入
+			// 第五步：属性注入（依赖注入）
 			populateBean(beanName, mbd, instanceWrapper);
 			// 第六步：初始化
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
@@ -1908,18 +1908,21 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			}, getAccessControlContext());
 		}
 		else {
-			// 第一步：执行aware接口中的方法，需要主要的是，不是所有的Aware接口都是在这步执行了
+			// 第一步：执行aware接口中的方法，需要注意的是，不是所有的Aware接口都是在这步执行了
 			invokeAwareMethods(beanName, bean);
 		}
 
 		Object wrappedBean = bean;
 		if (mbd == null || !mbd.isSynthetic()) {
 			// 第二步：完成Aware接口方法的执行,以及@PostConstructor,@PreDestroy注解的处理
+			// 参考这个org.springframework.beans.factory.annotation.InitDestroyAnnotationBeanPostProcessor.postProcessBeforeInitialization
+			// @PostConstructor,@PreDestroy 其实，就是实现了BeanPostProcessor接口
 			wrappedBean = applyBeanPostProcessorsBeforeInitialization(wrappedBean, beanName);
 		}
 
 		try {
 			// 第三步：完成初始化方法执行
+			// 执行  afterPropertiesSet 方法
 			invokeInitMethods(beanName, wrappedBean, mbd);
 		}
 		catch (Throwable ex) {
