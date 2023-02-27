@@ -53,6 +53,7 @@ public interface MessageSource {
 	 * the default message passed as a parameter (which may be {@code null})
 	 * @see #getMessage(MessageSourceResolvable, Locale)
 	 * @see java.text.MessageFormat
+	 * 尝试解决消息。 如果没有找到消息，返回默认消息。
 	 */
 	@Nullable
 	String getMessage(String code, @Nullable Object[] args, @Nullable String defaultMessage, Locale locale);
@@ -70,6 +71,7 @@ public interface MessageSource {
 	 * @throws NoSuchMessageException if no corresponding message was found
 	 * @see #getMessage(MessageSourceResolvable, Locale)
 	 * @see java.text.MessageFormat
+	 *  尝试解决消息。 如果无法找到消息，则视为错误。
 	 */
 	String getMessage(String code, @Nullable Object[] args, Locale locale) throws NoSuchMessageException;
 
@@ -90,6 +92,8 @@ public interface MessageSource {
 	 * @see MessageSourceResolvable#getArguments()
 	 * @see MessageSourceResolvable#getDefaultMessage()
 	 * @see java.text.MessageFormat
+	 *  尝试使用传入的{@code MessageSourceResolvable}参数中包含的所有属性来解析消息。
+	 *  我们必须在此方法上抛出{@code NoSuchMessageException}，因为在调用此方法时，我们无法确定可解析的{@code defaultMessage}属性是否为空
 	 */
 	String getMessage(MessageSourceResolvable resolvable, Locale locale) throws NoSuchMessageException;
 

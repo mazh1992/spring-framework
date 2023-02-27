@@ -210,6 +210,8 @@ public class SimpleAliasRegistry implements AliasRegistry {
 
 	/**
 	 * Determine the raw name, resolving aliases to canonical names.
+	 * 确定原始名称，将别名解析为规范名称。
+	 * 例如存在 A->B ,B->C ,C->D ,输入A，最终获取到D
 	 * @param name the user-specified name
 	 * @return the transformed name
 	 */
@@ -223,7 +225,7 @@ public class SimpleAliasRegistry implements AliasRegistry {
 				canonicalName = resolvedName;
 			}
 		}
-		while (resolvedName != null);
+		while (resolvedName != null); // 满足条件循环，不满足就跳出，知道循环到没有了，才跳出
 		return canonicalName;
 	}
 

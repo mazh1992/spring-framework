@@ -50,6 +50,8 @@ import org.springframework.core.io.ResourceLoader;
  * @see org.springframework.core.io.ResourceLoader
  * @see org.springframework.context.ApplicationContext
  * @see org.springframework.context.ResourceLoaderAware
+ *
+ * 实现类参考PathMatchingResourcePatternResolver是此接口的独立实现，
  */
 public interface ResourcePatternResolver extends ResourceLoader {
 
@@ -70,6 +72,10 @@ public interface ResourcePatternResolver extends ResourceLoader {
 	 * @param locationPattern the location pattern to resolve
 	 * @return the corresponding Resource objects
 	 * @throws IOException in case of I/O errors
+	 *
+	 * 返回指定路径下所有的资源对象。
+	 * 该接口用于解析带有*等通配符路径的资源文件，是ResourceLoader接口的拓展接口。
+	 * 例如：classpath:sql/crm/*.sql
 	 */
 	Resource[] getResources(String locationPattern) throws IOException;
 

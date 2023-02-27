@@ -216,7 +216,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	/** Statically specified listeners. */
 	private final Set<ApplicationListener<?>> applicationListeners = new LinkedHashSet<>();
 
-	/** Local listeners registered before refresh. */
+	/** Local listeners registered before refresh.
+	 * 本地监听，注册时间早于refresh，大概率也是子类的扩展实现，源码中没有找到添加的方法*/
 	@Nullable
 	private Set<ApplicationListener<?>> earlyApplicationListeners;
 
@@ -327,6 +328,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Create and return a new {@link StandardEnvironment}.
 	 * <p>Subclasses may override this method in order to supply
 	 * a custom {@link ConfigurableEnvironment} implementation.
+	 * 默认是创建一个StandardEnvironment()，但是有子类会覆盖。会对其进行扩展
+	 * 例如：org.springframework.web.context.support.AbstractRefreshableWebApplicationContext#createEnvironment()
 	 */
 	protected ConfigurableEnvironment createEnvironment() {
 		return new StandardEnvironment();
@@ -624,6 +627,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void prepareRefresh() {
 		// Switch to active.
+		// 设置启动时间，未关闭，激活
 		this.startupDate = System.currentTimeMillis();
 		this.closed.set(false);
 		this.active.set(true);
@@ -638,13 +642,23 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		}
 
 		// Initialize any placeholder property sources in the context environment.
+		// 初始化上下文环境中的任何占位符属性源。
+		// 留给子类覆盖，初始化属性资源
+		//默认是: org.springframework.core.env.StandardEnvironment
+		//web程序是: org.springframework.web.context.support.StandardServletEnvironment
+		// 可以做为一个扩展点，Apollo就是利用这个特性实现的配置中心。 参考：https://www.jianshu.com/p/cd6824f0672d
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
 		// see ConfigurablePropertyResolver#setRequiredProperties
+		// 这里也是做了一个扩展点
+		// 用来校验某些必须的参数，在上一步PropertySources容器中是不是存在，
+		// 但是这个必须参数，是需要自己来通过子类调用ConfigurablePropertyResolver#setRequiredProperties方法来存进去的
+		// 也就是说默认情况下，没有必须的参数，这个校验一定会通过
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
+		// 本地早起监听器，应该是需要子类扩展在刷新之前就调用set进来的
 		if (this.earlyApplicationListeners == null) {
 			this.earlyApplicationListeners = new LinkedHashSet<>(this.applicationListeners);
 		}
@@ -663,6 +677,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>Replace any stub property sources with actual instances.
 	 * @see org.springframework.core.env.PropertySource.StubPropertySource
 	 * @see org.springframework.web.context.support.WebApplicationContextUtils#initServletPropertySources
+	 * 初始化了一个PropertySources容器，PropertySources是存放PropertySource的
 	 */
 	protected void initPropertySources() {
 		// For subclasses: do nothing by default.
@@ -1007,6 +1022,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see ConfigurableApplicationContext#SHUTDOWN_HOOK_THREAD_NAME
 	 * @see #close()
 	 * @see #doClose()
+	 * 注册一个钩子函数，关闭的时候过来调用 -- 这里是jvm关闭的时候回调的
 	 */
 	@Override
 	public void registerShutdownHook() {
@@ -1042,6 +1058,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Also removes a JVM shutdown hook, if registered, as it's not needed anymore.
 	 * @see #doClose()
 	 * @see #registerShutdownHook()
+	 * 和#registerShutdownHook() 的区别，registerShutdownHook是注册了一个jvm钩子函数，jvm关闭的时候会回调
+	 * close() 是AutoCloseable的方法 也就是，try-with-resource
+	 * 算是两个不同的关闭入口
 	 */
 	@Override
 	public void close() {
@@ -1068,6 +1087,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #destroyBeans()
 	 * @see #close()
 	 * @see #registerShutdownHook()
+	 * 真正的 处理关闭逻辑
 	 */
 	protected void doClose() {
 		// Check whether an actual close attempt is necessary...
@@ -1364,6 +1384,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * Return the internal bean factory of the parent context if it implements
 	 * ConfigurableApplicationContext; else, return the parent context itself.
 	 * @see org.springframework.context.ConfigurableApplicationContext#getBeanFactory
+	 * 第一次创建的BeanFactory的时候，这个地方返回的就是null，没有父BeanFactory
 	 */
 	@Nullable
 	protected BeanFactory getInternalParentBeanFactory() {

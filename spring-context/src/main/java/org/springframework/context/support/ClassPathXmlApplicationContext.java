@@ -16,6 +16,7 @@
 
 package org.springframework.context.support;
 
+import jdk.nashorn.internal.runtime.ECMAException;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.core.io.ClassPathResource;
@@ -209,5 +210,8 @@ public class ClassPathXmlApplicationContext extends AbstractXmlApplicationContex
 	protected Resource[] getConfigResources() {
 		return this.configResources;
 	}
+
+
+
 
 }

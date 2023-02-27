@@ -145,6 +145,7 @@ public class DefaultResourceLoader implements ResourceLoader {
 		Assert.notNull(location, "Location must not be null");
 		// 正常来说protocolResolvers集合是空的，除非我们调用了它的addProtocolResolver方法添加了自定义协议处理器，
 		// 调用addProtocolResolver方法所添加的协议处理器会覆盖原有的处理逻辑
+		// 这个ProtocolResolver是个SPI接口，也就是说，提供的一个解析扩展接口，如果需要自定义，可以自己实现
 		for (ProtocolResolver protocolResolver : getProtocolResolvers()) {
 			Resource resource = protocolResolver.resolve(location, this);
 			if (resource != null) {

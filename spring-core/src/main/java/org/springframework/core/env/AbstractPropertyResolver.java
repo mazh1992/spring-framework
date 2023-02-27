@@ -61,6 +61,7 @@ public abstract class AbstractPropertyResolver implements ConfigurablePropertyRe
 	@Nullable
 	private String valueSeparator = SystemPropertyUtils.VALUE_SEPARATOR;
 
+	// 必须要子类实现了，手动set进来，不然就是个空的。只要不定制化，就是个空的。
 	private final Set<String> requiredProperties = new LinkedHashSet<>();
 
 
