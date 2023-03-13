@@ -31,6 +31,7 @@ import org.springframework.beans.factory.parsing.ImportDefinition;
 import org.springframework.beans.factory.parsing.ReaderEventListener;
 
 /**
+ * 收集读取事件。
  * @author Rob Harrop
  * @author Juergen Hoeller
  */

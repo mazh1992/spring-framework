@@ -59,6 +59,7 @@ import org.springframework.lang.Nullable;
  * @see org.springframework.beans.factory.config.ConfigurableListableBeanFactory
  * @see org.springframework.context.ApplicationContext#getAutowireCapableBeanFactory()
  */
+// 自动注入下的四种模型
 public interface AutowireCapableBeanFactory extends BeanFactory {
 
 	/**
@@ -68,7 +69,8 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see #autowire
 	 * @see #autowireBeanProperties
 	 */
-	// 自动注入下的四种模型
+	// 不自动注入
+	// ref进行装配注入，或者@Autowired和@Resource注入这种，是手动明确的注入，不属于自动注入的范围
 	int AUTOWIRE_NO = 0;
 
 	/**
@@ -77,6 +79,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see #createBean
 	 * @see #autowire
 	 * @see #autowireBeanProperties
+	 * 通过name 进行注入
 	 */
 	int AUTOWIRE_BY_NAME = 1;
 
@@ -86,6 +89,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see #createBean
 	 * @see #autowire
 	 * @see #autowireBeanProperties
+	 * 通过type，也就是class类型，进行注入
 	 */
 	int AUTOWIRE_BY_TYPE = 2;
 
@@ -94,6 +98,7 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * can be satisfied (involves resolving the appropriate constructor).
 	 * @see #createBean
 	 * @see #autowire
+	 * 通过构造函数进行注入
 	 */
 	int AUTOWIRE_CONSTRUCTOR = 3;
 
@@ -104,6 +109,9 @@ public interface AutowireCapableBeanFactory extends BeanFactory {
 	 * @see #autowire
 	 * @deprecated as of Spring 3.0: If you are using mixed autowiring strategies,
 	 * prefer annotation-based autowiring for clearer demarcation of autowiring needs.
+	 *
+	 * 尝试使用constructor进行自动装配，如果失败再尝试使用byType。
+	 * 从spring3.0开始就被放弃了
 	 */
 	@Deprecated
 	int AUTOWIRE_AUTODETECT = 4;

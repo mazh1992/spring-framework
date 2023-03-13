@@ -132,6 +132,7 @@ public class BeanDefinitionParserDelegate {
 
 	public static final String AUTOWIRE_ATTRIBUTE = "autowire";
 
+	//autowire-candidate：设置当前bean在被其他对象作为自动注入对象的时候，是否作为候选bean，默认值是true。
 	public static final String AUTOWIRE_CANDIDATE_ATTRIBUTE = "autowire-candidate";
 
 	public static final String PRIMARY_ATTRIBUTE = "primary";
@@ -431,6 +432,7 @@ public class BeanDefinitionParserDelegate {
 			}
 		}
 
+		// xml过来的这个地方必 = null
 		if (containingBean == null) {
 			checkNameUniqueness(beanName, aliases, ele);
 		}
@@ -528,7 +530,9 @@ public class BeanDefinitionParserDelegate {
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
 			// 解析Meta 元信息
 			parseMetaElements(ele, bd);
+			// 解析lookup-method 标签  覆盖方法，返回指定的bean  参考: https://blog.csdn.net/qq_36882793/article/details/106176923
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
+			// 解析replaced-method 标签  相当于对name方法的代理
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
 
 			parseConstructorArgElements(ele, bd);
@@ -567,6 +571,7 @@ public class BeanDefinitionParserDelegate {
 			@Nullable BeanDefinition containingBean, AbstractBeanDefinition bd) {
 
 		if (ele.hasAttribute(SINGLETON_ATTRIBUTE)) {
+			// 1.x 版本才有singleton属性，后面都升级到scope了，如果还配置singleton就报错
 			error("Old 1.x 'singleton' attribute in use - upgrade to 'scope' declaration", ele);
 		}
 		else if (ele.hasAttribute(SCOPE_ATTRIBUTE)) {
@@ -595,6 +600,7 @@ public class BeanDefinitionParserDelegate {
 			bd.setDependsOn(StringUtils.tokenizeToStringArray(dependsOn, MULTI_VALUE_ATTRIBUTE_DELIMITERS));
 		}
 
+		//autowire-candidate：设置当前bean在被其他对象作为自动注入对象的时候，是否作为候选bean，默认值是true。
 		String autowireCandidate = ele.getAttribute(AUTOWIRE_CANDIDATE_ATTRIBUTE);
 		if (isDefaultValue(autowireCandidate)) {
 			String candidatePattern = this.defaults.getAutowireCandidates();
@@ -607,6 +613,7 @@ public class BeanDefinitionParserDelegate {
 			bd.setAutowireCandidate(TRUE_VALUE.equals(autowireCandidate));
 		}
 
+		// 当bean有多个时，带这个属性的被优先注入
 		if (ele.hasAttribute(PRIMARY_ATTRIBUTE)) {
 			bd.setPrimary(TRUE_VALUE.equals(ele.getAttribute(PRIMARY_ATTRIBUTE)));
 		}
@@ -629,9 +636,12 @@ public class BeanDefinitionParserDelegate {
 			bd.setEnforceDestroyMethod(false);
 		}
 
+		// 调用这个指定的方法生成Bean
 		if (ele.hasAttribute(FACTORY_METHOD_ATTRIBUTE)) {
 			bd.setFactoryMethodName(ele.getAttribute(FACTORY_METHOD_ATTRIBUTE));
 		}
+
+		// 也是生产bean的
 		if (ele.hasAttribute(FACTORY_BEAN_ATTRIBUTE)) {
 			bd.setFactoryBeanName(ele.getAttribute(FACTORY_BEAN_ATTRIBUTE));
 		}
@@ -681,6 +691,7 @@ public class BeanDefinitionParserDelegate {
 		if (isDefaultValue(attr)) {
 			attr = this.defaults.getAutowire();
 		}
+		// 默认不进行自动注入
 		int autowire = AbstractBeanDefinition.AUTOWIRE_NO;
 		if (AUTOWIRE_BY_NAME_VALUE.equals(attr)) {
 			autowire = AbstractBeanDefinition.AUTOWIRE_BY_NAME;

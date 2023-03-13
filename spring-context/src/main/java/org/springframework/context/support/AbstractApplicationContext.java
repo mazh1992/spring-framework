@@ -561,7 +561,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				postProcessBeanFactory(beanFactory);
 
 				// Invoke factory processors registered as beans in the context.
-				// 5、调用所有注册的BeanFactoryPostProcess的bean
+				// 5、调用所有注册的BeanFactoryPostProcess的bean  要和BeanPostProcess区分开，是两个东西
 				// 执行已经注册在容器中的bean工厂的后置处理器，在这里完成的扫描
 				invokeBeanFactoryPostProcessors(beanFactory);
 
@@ -646,7 +646,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// 留给子类覆盖，初始化属性资源
 		//默认是: org.springframework.core.env.StandardEnvironment
 		//web程序是: org.springframework.web.context.support.StandardServletEnvironment
-		// 可以做为一个扩展点，Apollo就是利用这个特性实现的配置中心。 参考：https://www.jianshu.com/p/cd6824f0672d
+		// 可以做为一个扩展点，Apollo就是利用这个特性实现的配置中心。 @link https://www.jianshu.com/p/cd6824f0672d
 		initPropertySources();
 
 		// Validate that all properties marked as required are resolvable:
@@ -705,15 +705,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Tell the internal bean factory to use the context's class loader etc.
 		// 设置classLoader,一般就是appClassLoader
 		beanFactory.setBeanClassLoader(getClassLoader());
-		// 设置el表达式解析器
+		// 设置el表达式解析器 例如 @Value("${xxx}")
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
-		// 容器中添加一个属性编辑器注册表
+		// 容器中添加一个属性编辑器注册表  属性编辑器的主要功能就是将外部的设置值转换为 JVM 内部的对应类型
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
 		// Configure the bean factory with context callbacks.
 		//	添加了一个bean的后置处理器，用于执行xxxAware方法
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
 		// 对以下类型的依赖，不进行依赖检查，不进行依赖检查也就不会进行自动注入
+		// 不自动注入，但是通过上面的BeanPostProcessor注入，为什么？怕自动注入的不是想要的吗
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
 		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
@@ -726,6 +727,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// 为什么我们能直接将ApplicationContext等一些对象直接注入到bean中呢？就是下面这段代码的作用啦！
 		// Spring在进行属性注入时会从resolvableDependencies的map中查找是否有对应类型的bean存在，
 		// 如果有的话就直接注入，下面这段代码就是将对应的bean放入到resolvableDependencies这个map中
+		// 该方法的主要作用就是指定该类型接口，如果外部要注入该类型接口的对象，则会注入我们指定的对象，而不会去管其他接口实现类（与@Primary注解功能相同） -- 20230310 最新理解
 		beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
 		beanFactory.registerResolvableDependency(ResourceLoader.class, this);
 		beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
@@ -737,6 +739,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found.
 		// 是否配置了LTW,也就是在类加载时期进行织入，一般都不会配置
+		// 参考 https://www.cnblogs.com/wade-luffy/p/6073702.html
 		if (beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
 			beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
 			// Set a temporary ClassLoader for type matching.
@@ -750,9 +753,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
 		}
 		if (!beanFactory.containsLocalBean(SYSTEM_PROPERTIES_BEAN_NAME)) {
+
+			// 截止到这里，暂时还没有发现 System.getProperties() 中的properties是什么时候放进去的，
+			// org.springframework.beans.factory.config.PropertyPlaceholderConfigurerTests.setup
+			// 从上面这个测试类来看，应该是在后续的流程中有防止，先留个疑问，等后面看到了，再来更新
 			beanFactory.registerSingleton(SYSTEM_PROPERTIES_BEAN_NAME, getEnvironment().getSystemProperties());
 		}
 		if (!beanFactory.containsLocalBean(SYSTEM_ENVIRONMENT_BEAN_NAME)) {
+			// 通过C写的类库从操作系统层面获取到的变量
 			beanFactory.registerSingleton(SYSTEM_ENVIRONMENT_BEAN_NAME, getEnvironment().getSystemEnvironment());
 		}
 	}

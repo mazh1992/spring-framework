@@ -53,10 +53,14 @@ package org.springframework.core.env;
  */
 public class StandardEnvironment extends AbstractEnvironment {
 
-	/** System environment property source name: {@value}. */
+	/** System environment property source name: {@value}.
+	 *  这个是用来获取操作系统的变量
+	 * */
 	public static final String SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME = "systemEnvironment";
 
-	/** JVM system properties property source name: {@value}. */
+	/** JVM system properties property source name: {@value}.
+	 *  这个是用来获取jvm的变量
+	 * */
 	public static final String SYSTEM_PROPERTIES_PROPERTY_SOURCE_NAME = "systemProperties";
 
 

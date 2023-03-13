@@ -1098,6 +1098,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Override
 	public void destroySingletons() {
 		super.destroySingletons();
+		// 第一个参数是Set的clear，第二个参数是set不为空，
+		// 也就是Set不为空的话，就clear
 		updateManualSingletonNames(Set::clear, set -> !set.isEmpty());
 		clearByTypeCache();
 	}

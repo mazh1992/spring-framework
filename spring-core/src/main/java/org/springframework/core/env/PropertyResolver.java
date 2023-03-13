@@ -108,6 +108,7 @@ public interface PropertyResolver {
 	 * @return the resolved String (never {@code null})
 	 * @throws IllegalArgumentException if given text is {@code null}
 	 * or if any placeholders are unresolvable
+	 * 这个方法特别有意思，解析占位符，以后写业务代码可以用，没有值会抛异常，上面那个不会
 	 */
 	String resolveRequiredPlaceholders(String text) throws IllegalArgumentException;
 
