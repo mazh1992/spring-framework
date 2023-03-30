@@ -995,6 +995,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		publishEvent(new ContextRefreshedEvent(this));
 
 		// Participate in LiveBeansView MBean, if active.
+		// 这个是用来注册JMX的 参考：https://blog.csdn.net/shadow_zed/article/details/114965618
 		LiveBeansView.registerApplicationContext(this);
 	}
 

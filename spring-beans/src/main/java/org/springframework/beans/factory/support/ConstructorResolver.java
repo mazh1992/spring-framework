@@ -157,6 +157,8 @@ class ConstructorResolver {
 			// Take specified constructors, if any.
 			Constructor<?>[] candidates = chosenCtors;
 			if (candidates == null) {
+
+				// 为空使用默认的，无参的
 				Class<?> beanClass = mbd.getBeanClass();
 				try {
 					candidates = (mbd.isNonPublicAccessAllowed() ?
@@ -168,7 +170,7 @@ class ConstructorResolver {
 							"] from ClassLoader [" + beanClass.getClassLoader() + "] failed", ex);
 				}
 			}
-
+			// 1个就直接使用
 			if (candidates.length == 1 && explicitArgs == null && !mbd.hasConstructorArgumentValues()) {
 				Constructor<?> uniqueCandidate = candidates[0];
 				if (uniqueCandidate.getParameterCount() == 0) {
@@ -185,19 +187,21 @@ class ConstructorResolver {
 			// Need to resolve the constructor.
 			boolean autowiring = (chosenCtors != null ||
 					mbd.getResolvedAutowireMode() == AutowireCapableBeanFactory.AUTOWIRE_CONSTRUCTOR);
-			ConstructorArgumentValues resolvedValues = null;
+			ConstructorArgumentValues resolvedValues = null; // 构造函数的参数
 
 			int minNrOfArgs;
+			// 明确的参数
 			if (explicitArgs != null) {
 				minNrOfArgs = explicitArgs.length;
 			}
 			else {
-				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues();
+				ConstructorArgumentValues cargs = mbd.getConstructorArgumentValues(); // bean定义的参数
 				resolvedValues = new ConstructorArgumentValues();
+				// 解析需要的最少参数个数
 				minNrOfArgs = resolveConstructorArguments(beanName, mbd, bw, cargs, resolvedValues);
 			}
 
-			AutowireUtils.sortConstructors(candidates);
+			AutowireUtils.sortConstructors(candidates); // 排序，public 有限，其次看参数个数， 多的优先。
 			int minTypeDiffWeight = Integer.MAX_VALUE;
 			Set<Constructor<?>> ambiguousConstructors = null;
 			LinkedList<UnsatisfiedDependencyException> causes = null;

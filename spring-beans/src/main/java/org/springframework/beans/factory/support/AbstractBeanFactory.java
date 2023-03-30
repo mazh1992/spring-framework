@@ -325,6 +325,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// 遍历所有申明的依赖
 					for (String dep : dependsOn) {
 						// 如果这个bean所依赖的bean又依赖了当前这个bean,出现了循环依赖，直接报错
+						// 这里说的循环依赖，是那种添加了，@DependOn 注解的，明确的依赖，这样的依赖出现了循环依赖，直接报错。
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
