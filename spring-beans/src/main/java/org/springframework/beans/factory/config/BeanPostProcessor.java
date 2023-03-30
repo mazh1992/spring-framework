@@ -54,6 +54,9 @@ import org.springframework.lang.Nullable;
  * @see DestructionAwareBeanPostProcessor
  * @see ConfigurableBeanFactory#addBeanPostProcessor
  * @see BeanFactoryPostProcessor
+ *
+ * 初始化前后的，后置处理，注意和实例化区分
+ * @see org.springframework.beans.factory.config.InstantiationAwareBeanPostProcessor
  */
 public interface BeanPostProcessor {
 
@@ -70,6 +73,8 @@ public interface BeanPostProcessor {
 	 * @throws org.springframework.beans.BeansException in case of errors
 	 * @see org.springframework.beans.factory.InitializingBean#afterPropertiesSet
 	 */
+
+	// 这个叫初始化前，看名字，Initialization 叫初始化，还有一个实例化，
 	@Nullable
 	default Object postProcessBeforeInitialization(Object bean, String beanName) throws BeansException {
 		return bean;

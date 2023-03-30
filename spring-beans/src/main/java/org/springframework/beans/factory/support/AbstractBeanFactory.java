@@ -251,7 +251,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
-		// 这个方法就很牛逼了，通过它解决了循环依赖的问题，不过目前我们只需要知道它是从单例池中获取已经创建的Bean即可，循环依赖后面我单独写一篇文章
+		// 这个方法就很牛逼了，通过它解决了循环依赖的问题，不过目前我们只需要知道它是从单例池中获取已经创建的Bean即可
 		// 方法作用：已经创建的Bean会被放到单例池中，这里就是从单例池中获取
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
@@ -274,7 +274,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
 			// 在缓存中获取不到这个Bean
-			// 原型下的循环依赖直接报错
+			// 原型下的循环依赖直接报错，原型模式，并且当前线程创建过了的报错
+			// 下面 371行。原型模式下，在创建之前，会写入ThreadLocal。finally之后会清楚。
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
@@ -282,6 +283,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// Check if bean definition exists in this factory.
 			// 核心要义，找不到我们就从父容器中再找一次
 			BeanFactory parentBeanFactory = getParentBeanFactory();
+
+			// 父容器不为空，并且不存在bd，从父容器查找
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
 				String nameToLookup = originalBeanName(name);
@@ -312,6 +315,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// 这个合并，就是子类要合并父类的定义
 				RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
 				// 检查合并后的bd是否是abstract,这个检查现在已经没有作用了，必定会通过
+				// 前面已经判断过了，抽象的，非单例的，懒加载的，都被排除了，进不来这里
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
@@ -329,6 +333,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						registerDependentBean(dep, beanName);
 						try {
 							// 先创建其依赖的Bean
+							// 这是个递归
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
@@ -361,10 +366,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					// It's a prototype -> create a new instance.
 					Object prototypeInstance = null;
 					try {
+						// 创建前存入ThreadLocal
 						beforePrototypeCreation(beanName);
 						prototypeInstance = createBean(beanName, mbd, args);
 					}
 					finally {
+						// 创建后移除
 						afterPrototypeCreation(beanName);
 					}
 					bean = getObjectForBeanInstance(prototypeInstance, name, beanName, mbd);
@@ -406,6 +413,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		}
 
 		// Check if required type matches the type of the actual bean instance.
+		// 如果创建的bean不是传过来的指定的class类型，通过conversionService进行类型转换。
 		if (requiredType != null && !requiredType.isInstance(bean)) {
 			try {
 				T convertedBean = getTypeConverter().convertIfNecessary(bean, requiredType);
@@ -1829,10 +1837,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			Object beanInstance, String name, String beanName, @Nullable RootBeanDefinition mbd) {
 
 		// Don't let calling code try to dereference the factory if the bean isn't a factory.
+		// name是FactoryBean的
 		if (BeanFactoryUtils.isFactoryDereference(name)) {
+
+			// 创建bean的方法，理论上来说是个类型，如果是 void的，那么就是NullBean
 			if (beanInstance instanceof NullBean) {
 				return beanInstance;
 			}
+			// 实例不是就报错
 			if (!(beanInstance instanceof FactoryBean)) {
 				throw new BeanIsNotAFactoryException(beanName, beanInstance.getClass());
 			}
@@ -1845,10 +1857,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		// Now we have the bean instance, which may be a normal bean or a FactoryBean.
 		// If it's a FactoryBean, we use it to create a bean instance, unless the
 		// caller actually wants a reference to the factory.
+		// 普通的Bean在这里就返回了。
 		if (!(beanInstance instanceof FactoryBean)) {
 			return beanInstance;
 		}
 
+		// 从 org.springframework.beans.factory.support.AbstractBeanFactory.doGetBean 过来的name不可能为空，走不到下面的。
+
+		// 什么情况下才会走到这里，name是空的，并且 beanInstance instanceof FactoryBean
+		// 下面都是处理FactoryBean的
 		Object object = null;
 		if (mbd != null) {
 			mbd.isFactoryBean = true;

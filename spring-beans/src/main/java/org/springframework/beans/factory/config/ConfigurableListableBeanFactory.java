@@ -83,6 +83,7 @@ public interface ConfigurableListableBeanFactory
 	 */
 	// 注入一个指定类型的依赖。这个方法设计的目的主要是为了让容器中的Bean能依赖一个不被容器管理的Bean
 	// 该方法的主要作用就是指定该类型接口，如果外部要注入该类型接口的对象，则会注入我们指定的对象，而不会去管其他接口实现类（与@Primary注解功能相同） -- 20230310 最新理解
+	// 与FactoryBean
 	void registerResolvableDependency(Class<?> dependencyType, @Nullable Object autowiredValue);
 
 	/**

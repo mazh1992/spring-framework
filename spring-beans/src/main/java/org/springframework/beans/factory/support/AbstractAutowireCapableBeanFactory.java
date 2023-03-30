@@ -138,6 +138,10 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	/**
 	 * Whether to resort to injecting a raw bean instance in case of circular reference,
 	 * even if the injected bean eventually got wrapped.
+	 * 标注是否允许此Bean的原始类型被注入到其它Bean里面，即使自己最终会被包装（代理）
+	 *
+	 * resort to 依赖依靠
+	 * raw 生的，未经过加工的，这里是指原始的类
 	 */
 	private boolean allowRawInjectionDespiteWrapping = false;
 
@@ -487,6 +491,12 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// Make sure bean class is actually resolved at this point, and
 		// clone the bean definition in case of a dynamically resolved Class
 		// which cannot be stored in the shared merged bean definition.
+
+		// 这里要区分一个概念，class，Class，对象
+		// class：通常是指类的那个文件xxx.class文件.
+		// Class：是一个实实在在的类，在包 java.lang 下。
+		// 对象：就是我们常说的new 出来的对象。
+		// class和对象都好理解，不多说。 @link https://www.cnblogs.com/flyme/p/4571030.html
 		// 第一步：解析BeanDefinition中的beanClass属性
 		Class<?> resolvedClass = resolveBeanClass(mbd, beanName); // 通过反射去加载Class文件
 		if (resolvedClass != null && !mbd.hasBeanClass() && mbd.getBeanClassName() != null) {
@@ -507,9 +517,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			// Give BeanPostProcessors a chance to return a proxy instead of the target bean instance.
 			// 第三步：判断这个类在之后是否需要进行AOP代理
+			// 这里是一个 实例化的后置通知。可扩展。当然如果在这里自己返回了bean，那么接下来就不会再创建bean了，可以用来做替换
+			// 代理，只是他的一小部分，不是全部
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
-				return bean;
+				return bean; // 创建代理这个条件会成立，bean就是那个代理，并不是真正的类。
 			}
 		}
 		catch (Throwable ex) {
@@ -559,7 +571,6 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		BeanWrapper instanceWrapper = null;
 		if (mbd.isSingleton()) {
 			// 这行代码看起来就跟factoryBean相关，这是什么意思呢？
-			// 在下文我会通过例子介绍下，你可以暂时理解为，这个地方返回的就是个null
 			// 第一步：单例情况下，看factoryBeanInstanceCache这个缓存中是否有（FactoryBean时会有被放进去的bean）
 			instanceWrapper = this.factoryBeanInstanceCache.remove(beanName);
 		}
@@ -596,8 +607,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Eagerly cache singletons to be able to resolve circular references
 		// even when triggered by lifecycle interfaces like BeanFactoryAware.
-		// 这里是用来出来循环依赖的，关于循环以来，在介绍完正常的Bean的创建后，单独用一篇文章说明
-		// 这里不做过多解释
+		// 这里是用来出来循环依赖的 单例，允许循环依赖，正在创建，（什么叫正在创建，创建前会存入singletonsCurrentlyInCreation，创建后remove。但是在创建的时候穿插了，很多的BeanPostProcess）
+		//  一路跟踪下来，org.springframework.beans.factory.support.DefaultSingletonBeanRegistry.getSingleton(java.lang.String, org.springframework.beans.factory.ObjectFactory<?>)
+		// 是会设置 当前bean，正在创建中，所以isSingletonCurrentlyInCreation(beanName) 条件会成立的。
 		boolean earlySingletonExposure = (mbd.isSingleton() && this.allowCircularReferences &&
 				isSingletonCurrentlyInCreation(beanName));
 		if (earlySingletonExposure) {
@@ -606,6 +618,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 						"' to allow for resolving potential circular references");
 			}
 			// 第四步：调用后置处理器，早期曝光一个工厂对象
+			// 就是这里，bean已经实例化了，但是还没有初始化，就已经封装好，放入三级缓存里面了。
+			// 就是因为在下面第五步：属性注入的时候，会出现循环依赖，A -> B -> A。
+			// 这个时候，就把A先放入三级缓存，然后B依赖A的时候，就能够找到，进而完成B的注入，然后完成A的注入（递归算法）
+			// 如果只存在循环依赖的话 二级缓存足够了，三级缓存的原因，就是因为循环依赖里面有aop代理，这个时候，第三级缓存就是代理类
+
+			// 参考这个，讲的比较详细，https://blog.csdn.net/chaitoudaren/article/details/105060882
+			// 为什么用三级缓存，而不是二级缓存，或者是一级缓存，是不行吗。其实并不是  参考 https://www.cnblogs.com/asker009/p/14376955.html
+			// 从软件设计角度考虑，三个缓存代表三种不同的职责，根据单一职责原理，从设计角度就需分离三种职责的缓存，所以形成三级缓存的状态。
 			addSingletonFactory(beanName, () -> getEarlyBeanReference(beanName, mbd, bean));
 		}
 
@@ -979,6 +999,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param mbd the merged bean definition for the bean
 	 * @param bean the raw bean instance
 	 * @return the object to expose as bean reference
+	 *
+	 * 不需要包装，就是bean本身，需要代理的，就是代理类
 	 */
 	protected Object getEarlyBeanReference(String beanName, RootBeanDefinition mbd, Object bean) {
 		Object exposedObject = bean;
@@ -1133,13 +1155,16 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 * @param beanName the name of the bean
 	 * @param mbd the bean definition for the bean
 	 * @return the shortcut-determined bean instance, or {@code null} if none
+	 * 1. 执行实例化前的，后置处理
+	 * 2. 实例化后置前处理器。理论上都是返回null，如果返回有值，那么就认为是已经创建好了Bean，接着会走实例化后置后处理器。
+	 * 一般情况下应该不会有值，凡事没有绝对。
 	 */
 	@Nullable
 	protected Object resolveBeforeInstantiation(String beanName, RootBeanDefinition mbd) {
 		Object bean = null;
 		if (!Boolean.FALSE.equals(mbd.beforeInstantiationResolved)) {
 			// Make sure bean class is actually resolved at this point.
-			// 不是合成类，并且有实例化后置处理器。这个判断基本上恒成立
+			// 不是合成类，并且有实例化后置处理器。这个判断基本上恒成立（也就是添加任何一个BeanPostProcess这个就是true）
 			if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 				Class<?> targetType = determineTargetType(beanName, mbd);
 				if (targetType != null) {
@@ -1174,10 +1199,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	 */
 	@Nullable
 	protected Object applyBeanPostProcessorsBeforeInstantiation(Class<?> beanClass, String beanName) {
+
+		// 获取所有的Bean后置处理器
 		for (BeanPostProcessor bp : getBeanPostProcessors()) {
-			if (bp instanceof InstantiationAwareBeanPostProcessor) {
+			if (bp instanceof InstantiationAwareBeanPostProcessor) { // 挑选出，实例化后置处理器
 				InstantiationAwareBeanPostProcessor ibp = (InstantiationAwareBeanPostProcessor) bp;
 				Object result = ibp.postProcessBeforeInstantiation(beanClass, beanName);
+				// 这里要注意，如果返回不是null。那么就不在循环了
+				// 参考  AbstractAutoProxyCreator，如果创建了代理类，就直接返回了。
 				if (result != null) {
 					return result;
 				}
@@ -1201,9 +1230,11 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	protected BeanWrapper createBeanInstance(String beanName, RootBeanDefinition mbd, @Nullable Object[] args) {
 		// Make sure bean class is actually resolved at this point.
 		// 获取到解析后的beanClass
+		// 这个从前面跟过来，都判断好几遍了。
 		Class<?> beanClass = resolveBeanClass(mbd, beanName);
 
 		// 1.获取这个bean的class属性，确保beanDefinition中beanClass属性已经完成解析
+		// 不是public 修改的，并且不允许访问非public方法和属性
 		if (beanClass != null && !Modifier.isPublic(beanClass.getModifiers()) && !mbd.isNonPublicAccessAllowed()) {
 			throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 					"Bean class isn't public, and non-public access not allowed: " + beanClass.getName());
@@ -1459,6 +1490,8 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		// 提供的这个后置处理如果实现了postProcessAfterInstantiation方法并且返回false
 		// 那么可以跳过Spring默认的属性注入，但是这也意味着我们要自己去实现属性注入的逻辑
 		// 所以一般情况下，我们也不会这么去扩展
+		// 什么是合成类 参考：https://juejin.cn/post/6844904167937409031
+		// 跟一下代码就会发现，合成类被set成true的，就是AOP动态代理相关的。
 		if (!mbd.isSynthetic() && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof InstantiationAwareBeanPostProcessor) {

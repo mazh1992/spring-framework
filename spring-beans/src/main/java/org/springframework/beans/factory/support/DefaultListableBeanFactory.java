@@ -876,7 +876,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		// 遍历所有bd，一个个进行创建
 		for (String beanName : beanNames) {
 			// 获取到指定名称对应的bd，
-			// 获取合并后的，例如，父子类的，子类会合并父类的
+			// 获取合并后的，例如，父子类的，子类会合并父类的一些属性。
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 			// 对不是延迟加载的单例的Bean进行创建
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {

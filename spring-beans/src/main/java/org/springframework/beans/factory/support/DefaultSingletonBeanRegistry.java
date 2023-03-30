@@ -74,15 +74,27 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	private static final int SUPPRESSED_EXCEPTIONS_LIMIT = 100;
 
 
+	// 看到的三级缓存比较合理的解释 https://www.cnblogs.com/asker009/p/14376955.html
+
 	/** Cache of singleton objects: bean name to bean instance.
-	 * 单例对象的缓存:从beanname到bean实例 */
+	 * 单例对象的缓存:从beanname到bean实例
+	 * 一级缓存  存放的是已经初始化好的bean，即已经完成初始化好的注入对象的代理
+	 * 是完整的bean，它可以被外界任意使用，并且不会有歧义。
+	 * */
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
 	/** Cache of singleton factories: bean name to ObjectFactory.
-	 * 单例工厂的缓存:从beanname到ObjectFactory*/
+	 * 单例工厂的缓存:从beanname到ObjectFactory
+	 * 三级缓存  刚实例化完，还未初始化的被封装了的bean，如果有aop代理，那么就是aop代理的对象。
+	 * 其职责就是包装一个bean，有回调逻辑，所以它的作用非常清晰，并且只能处于第三层。
+	 * */
 	private final Map<String, ObjectFactory<?>> singletonFactories = new HashMap<>(16);
 
-	/** Cache of early singleton objects: bean name to bean instance. 早期暴露的bean*/
+	/** Cache of early singleton objects: bean name to bean instance.
+	 * 二级缓存  存放的是还没有完全被初始化好的中间对象代理，即已经生成了bean但是这个bean还有部分成员对象还未被注入进来
+	 * 是不完整的bean，没有完成初始化，它与singletonObjects的分离主要是职责的分离以及边界划分，
+	 * 可以试想一个Map缓存里既有完整可使用的bean，也有不完整的，只能持有引用的bean，在复杂度很高的架构中，很容易出现歧义，并带来一些不可预知的错误。
+	 */
 	private final Map<String, Object> earlySingletonObjects = new ConcurrentHashMap<>(16);
 
 	/** Set of registered singletons, containing the bean names in registration order.
@@ -149,10 +161,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 */
 	protected void addSingleton(String beanName, Object singletonObject) {
 		synchronized (this.singletonObjects) {
-			this.singletonObjects.put(beanName, singletonObject);
-			this.singletonFactories.remove(beanName);   // 也是和循环依赖有关系
-			this.earlySingletonObjects.remove(beanName); // 早期暴露，应该是和循环依赖相关的
-			this.registeredSingletons.add(beanName);
+			this.singletonObjects.put(beanName, singletonObject); // put进 一级缓存
+			this.singletonFactories.remove(beanName);   // 三级缓存 清除掉
+			this.earlySingletonObjects.remove(beanName); // 二级缓存也清除掉
+			this.registeredSingletons.add(beanName); // 注册一个单例Bean
 		}
 	}
 
@@ -189,24 +201,27 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @param beanName the name of the bean to look for
 	 * @param allowEarlyReference whether early references should be created or not
 	 * @return the registered singleton object, or {@code null} if none found
+	 *
+	 * 关于为什么采用三级缓存，我觉得这篇文章说的不错，https://www.cnblogs.com/asker009/p/14376955.html
 	 */
 	@Nullable
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		// Quick check for existing instance without full singleton lock
-		Object singletonObject = this.singletonObjects.get(beanName);
+		Object singletonObject = this.singletonObjects.get(beanName); // 一级缓存读
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
-			singletonObject = this.earlySingletonObjects.get(beanName);
+			singletonObject = this.earlySingletonObjects.get(beanName); // 二级缓存读
 			if (singletonObject == null && allowEarlyReference) {
-				synchronized (this.singletonObjects) {
+				synchronized (this.singletonObjects) { // 加锁，再次读取
 					// Consistent creation of early reference within full singleton lock
-					singletonObject = this.singletonObjects.get(beanName);
+					singletonObject = this.singletonObjects.get(beanName); // 再读一遍
 					if (singletonObject == null) {
 						singletonObject = this.earlySingletonObjects.get(beanName);
 						if (singletonObject == null) {
-							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName);
+							// 早起暴露
+							ObjectFactory<?> singletonFactory = this.singletonFactories.get(beanName); // 三级缓存读
 							if (singletonFactory != null) {
 								singletonObject = singletonFactory.getObject();
-								this.earlySingletonObjects.put(beanName, singletonObject);
+								this.earlySingletonObjects.put(beanName, singletonObject); // 读到了存入二级缓存，并把三级缓存移除掉。
 								this.singletonFactories.remove(beanName);
 							}
 						}
@@ -230,7 +245,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		synchronized (this.singletonObjects) {
 			Object singletonObject = this.singletonObjects.get(beanName);
 			if (singletonObject == null) {
-				if (this.singletonsCurrentlyInDestruction) {
+				if (this.singletonsCurrentlyInDestruction) { // 正在销毁Bean，不允许创建新的
 					throw new BeanCreationNotAllowedException(beanName,
 							"Singleton bean creation not allowed while singletons of this factory are in destruction " +
 							"(Do not request a bean from a BeanFactory in a destroy method implementation!)");
@@ -238,7 +253,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 				if (logger.isDebugEnabled()) {
 					logger.debug("Creating shared instance of singleton bean '" + beanName + "'");
 				}
-				beforeSingletonCreation(beanName);
+				beforeSingletonCreation(beanName); // 添加到正在创建的集合中
 				boolean newSingleton = false;
 				boolean recordSuppressedExceptions = (this.suppressedExceptions == null);
 				if (recordSuppressedExceptions) {
@@ -268,9 +283,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 					if (recordSuppressedExceptions) {
 						this.suppressedExceptions = null;
 					}
-					afterSingletonCreation(beanName);
+					afterSingletonCreation(beanName); // 从正在创建的对象中移除。
 				}
 				if (newSingleton) {
+					// 加入一级缓存，清除二，三级缓存。并且注册bean
 					addSingleton(beanName, singletonObject);
 				}
 			}

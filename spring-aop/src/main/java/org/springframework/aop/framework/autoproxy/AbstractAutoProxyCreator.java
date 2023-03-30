@@ -237,7 +237,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	@Override
 	public Object getEarlyBeanReference(Object bean, String beanName) {
 		Object cacheKey = getCacheKey(bean.getClass(), beanName);
-		this.earlyProxyReferences.put(cacheKey, bean);
+		this.earlyProxyReferences.put(cacheKey, bean); // 缓存起来
 		return wrapIfNecessary(bean, beanName, cacheKey);
 	}
 
@@ -336,18 +336,22 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (StringUtils.hasLength(beanName) && this.targetSourcedBeans.contains(beanName)) {
 			return bean;
 		}
+
+		// 不需要代理
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
+		// aop自己的一些类，和已经指明了，不需要代理直接返回原始Bean
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
 		// Create proxy if we have advice.
+		// 获取代理
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
-			this.advisedBeans.put(cacheKey, Boolean.TRUE);
+			this.advisedBeans.put(cacheKey, Boolean.TRUE); // 表明，这个Bean需要代理。
 			Object proxy = createProxy(
 					bean.getClass(), beanName, specificInterceptors, new SingletonTargetSource(bean));
 			this.proxyTypes.put(cacheKey, proxy.getClass());

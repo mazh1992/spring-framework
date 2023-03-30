@@ -570,7 +570,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				registerBeanPostProcessors(beanFactory);
 
 				// Initialize message source for this context.
-				// 7、初始化信息源和国际化
+				// 7、初始化信息源和国际化，初始化了一个message的bean
 				initMessageSource();
 
 				// Initialize event multicaster for this context.
@@ -582,7 +582,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				onRefresh();
 
 				// Check for listener beans and register them.
-				// 10、为事件传播注册事件监听
+				// 10、为事件传播注册事件监听并发布早起监听事件第一步，的时候有早期监听容器
 				registerListeners();
 
 				// Instantiate all remaining (non-lazy-init) singletons.
@@ -906,18 +906,21 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 */
 	protected void registerListeners() {
 		// Register statically specified listeners first.
+		// 把之前保存的监听器，添加进来，因为多播器在第8步，才刚刚创建起来。
 		for (ApplicationListener<?> listener : getApplicationListeners()) {
 			getApplicationEventMulticaster().addApplicationListener(listener);
 		}
 
 		// Do not initialize FactoryBeans here: We need to leave all regular beans
 		// uninitialized to let post-processors apply to them!
+		// 将所有的ApplicationListener接口的实现类，都添加进来
 		String[] listenerBeanNames = getBeanNamesForType(ApplicationListener.class, true, false);
 		for (String listenerBeanName : listenerBeanNames) {
 			getApplicationEventMulticaster().addApplicationListenerBean(listenerBeanName);
 		}
 
 		// Publish early application events now that we finally have a multicaster...
+		// 发布早期监听事件
 		Set<ApplicationEvent> earlyEventsToProcess = this.earlyApplicationEvents;
 		this.earlyApplicationEvents = null;
 		if (!CollectionUtils.isEmpty(earlyEventsToProcess)) {
@@ -934,6 +937,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	protected void finishBeanFactoryInitialization(ConfigurableListableBeanFactory beanFactory) {
 		// Initialize conversion service for this context.
 		// 初始化一个ConversionService用于类型转换，这个ConversionService会在实例化对象的时候用到
+		// 这个特别重要。
 		if (beanFactory.containsBean(CONVERSION_SERVICE_BEAN_NAME) &&
 				beanFactory.isTypeMatch(CONVERSION_SERVICE_BEAN_NAME, ConversionService.class)) {
 			beanFactory.setConversionService(

@@ -32,6 +32,12 @@ import org.springframework.lang.Nullable;
  *
  * @author Juergen Hoeller
  * @since 5.0
+ *
+ * 一个类型为Null的Bean
+ *
+ * 例如：@Bean 只能被用到方法上，被它声明的方法会在 springboot 加载的时候被执行（前提是该方法所在的类会被声明为一个bean），
+ * 生成一个以方法名为名，以返回值为对象的 bean ,如果该方法没有放回值，则会生成一个以方法名为名，
+ * 类型为 org.springframework.beans.factory.support.NullBean 的 bean
  */
 final class NullBean {
 
